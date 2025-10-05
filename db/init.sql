@@ -1,0 +1,2 @@
+-- Simple bootstrap (SQLAlchemy will manage schema too). This ensures DB exists.
+-- You can leave this empty or add seed data if desired.
