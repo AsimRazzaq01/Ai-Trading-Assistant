@@ -1,20 +1,28 @@
-from fastapi import APIRouter, Depends, HTTPException, Response
+# backend/app/api/auth_router.py
+
+from fastapi import APIRouter, Depends, HTTPException, Response, Request
 from sqlalchemy.orm import Session
 from app.db.database import get_db
 from app.db import models
-from app.core.security import hash_password, create_jwt_token, verify_password
+from app.core.security import hash_password, create_access_token, verify_password
 from app.api.deps import get_current_user_from_cookie
 
 router = APIRouter()
 
+
 @router.post("/register")
 def register(user: dict, db: Session = Depends(get_db)):
+    # Check if user already exists
     db_user = db.query(models.User).filter(models.User.email == user["email"]).first()
     if db_user:
         raise HTTPException(status_code=400, detail="Email already registered")
 
+    # Hash and store password
     hashed_password = hash_password(user["password"])
-    new_user = models.User(email=user["email"], password=hashed_password)
+    new_user = models.User(
+        email=user["email"],
+        hashed_password=hashed_password
+    )
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
@@ -24,12 +32,15 @@ def register(user: dict, db: Session = Depends(get_db)):
 
 @router.post("/login")
 def login(user: dict, response: Response, db: Session = Depends(get_db)):
+    # Look up user
     db_user = db.query(models.User).filter(models.User.email == user["email"]).first()
-    if not db_user or not verify_password(user["password"], db_user.password):
+    if not db_user or not verify_password(user["password"], db_user.hashed_password):
         raise HTTPException(status_code=400, detail="Invalid email or password")
 
-    token = create_jwt_token({"sub": str(db_user.id)})
-    # HttpOnly cookie
+    # Create token
+    token = create_access_token({"sub": str(db_user.id)})
+
+    # Set secure HttpOnly cookie
     response.set_cookie(
         key="access_token",
         value=token,
@@ -37,6 +48,7 @@ def login(user: dict, response: Response, db: Session = Depends(get_db)):
         max_age=60 * 60 * 24,  # 1 day
         samesite="lax"
     )
+
     return {"message": "Login successful"}
 
 
