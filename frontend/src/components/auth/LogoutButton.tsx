@@ -1,3 +1,5 @@
+// frontend/src/components/auth/LogoutButton.tsx
+
 "use client";
 export default function LogoutButton() {
     return (

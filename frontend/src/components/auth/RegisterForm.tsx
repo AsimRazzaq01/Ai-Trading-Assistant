@@ -1,3 +1,5 @@
+// frontend/src/components/auth/RegisterForm.tsx
+
 "use client";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
