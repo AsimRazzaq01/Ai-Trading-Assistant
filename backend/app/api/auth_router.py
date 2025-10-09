@@ -1,27 +1,54 @@
 # backend/app/api/auth_router.py
 
-from fastapi import APIRouter, Depends, HTTPException, Response, Request
+from typing import Optional
+from fastapi import APIRouter, Depends, HTTPException, Response, Header
+from pydantic import BaseModel, EmailStr, Field, model_validator
 from sqlalchemy.orm import Session
+from jose import jwt, JWTError
+
 from app.db.database import get_db
 from app.db import models
 from app.core.security import hash_password, create_access_token, verify_password
-from app.api.deps import get_current_user_from_cookie
+from app.core.config import settings
 
 router = APIRouter()
 
+# ============================================================
+# 📦 Schemas
+# ============================================================
+
+class RegisterRequest(BaseModel):
+    email: EmailStr
+    password: str = Field(..., min_length=6)
+
+
+class LoginRequest(BaseModel):
+    email: Optional[EmailStr] = None
+    username: Optional[str] = None
+    password: str = Field(..., min_length=6)
+
+    # ✅ Pydantic v2 validator — replaces old field_validator
+    @model_validator(mode="after")
+    def ensure_identifier(self):
+        if not self.email and not self.username:
+            raise ValueError("Provide either email or username")
+        return self
+
+
+# ============================================================
+# 🧩 Routes
+# ============================================================
 
 @router.post("/register")
-def register(user: dict, db: Session = Depends(get_db)):
-    # Check if user already exists
-    db_user = db.query(models.User).filter(models.User.email == user["email"]).first()
-    if db_user:
+def register(payload: RegisterRequest, db: Session = Depends(get_db)):
+    """Register a new user."""
+    existing = db.query(models.User).filter(models.User.email == payload.email).first()
+    if existing:
         raise HTTPException(status_code=400, detail="Email already registered")
 
-    # Hash and store password
-    hashed_password = hash_password(user["password"])
     new_user = models.User(
-        email=user["email"],
-        hashed_password=hashed_password
+        email=payload.email,
+        hashed_password=hash_password(payload.password),
     )
     db.add(new_user)
     db.commit()
@@ -31,33 +58,60 @@ def register(user: dict, db: Session = Depends(get_db)):
 
 
 @router.post("/login")
-def login(user: dict, response: Response, db: Session = Depends(get_db)):
-    # Look up user
-    db_user = db.query(models.User).filter(models.User.email == user["email"]).first()
-    if not db_user or not verify_password(user["password"], db_user.hashed_password):
-        raise HTTPException(status_code=400, detail="Invalid email or password")
+def login(payload: LoginRequest, response: Response, db: Session = Depends(get_db)):
+    """Login with email or username."""
+    q = db.query(models.User)
 
-    # Create token
+    if payload.email:
+        db_user = q.filter(models.User.email == payload.email).first()
+    else:
+        db_user = q.filter(models.User.username == payload.username).first()
+
+    if not db_user or not verify_password(payload.password, db_user.hashed_password):
+        raise HTTPException(status_code=400, detail="Invalid email/username or password")
+
     token = create_access_token({"sub": str(db_user.id)})
 
-    # Set secure HttpOnly cookie
+    # ✅ Send HttpOnly cookie for SSR use
     response.set_cookie(
         key="access_token",
         value=token,
         httponly=True,
-        max_age=60 * 60 * 24,  # 1 day
-        samesite="lax"
+        samesite="lax",
+        max_age=60 * 60 * 24,
+        path="/",
     )
 
-    return {"message": "Login successful"}
+    return {"message": "Login successful", "access_token": token, "token_type": "bearer"}
 
 
 @router.post("/logout")
 def logout(response: Response):
-    response.delete_cookie("access_token")
+    """Clear cookie on logout."""
+    response.delete_cookie("access_token", path="/")
     return {"message": "Logged out"}
 
 
 @router.get("/me")
-def read_users_me(current_user: models.User = Depends(get_current_user_from_cookie)):
-    return {"id": current_user.id, "email": current_user.email}
+def read_me(authorization: Optional[str] = Header(None), db: Session = Depends(get_db)):
+    """Get current logged-in user from Bearer token."""
+    if not authorization or not authorization.lower().startswith("bearer "):
+        raise HTTPException(status_code=401, detail="Authentication required")
+
+    token = authorization.split(" ", 1)[1]
+    try:
+        payload = jwt.decode(
+            token,
+            settings.JWT_SECRET_KEY,
+            algorithms=[settings.JWT_ALGORITHM],
+        )
+        user_id = int(payload.get("sub"))
+    except (JWTError, ValueError, TypeError):
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+
+    user = db.get(models.User, user_id)
+    if not user:
+        raise HTTPException(status_code=401, detail="User not found")
+
+    return {"id": user.id, "email": user.email}
+
