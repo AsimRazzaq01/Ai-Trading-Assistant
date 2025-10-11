@@ -1,27 +1,38 @@
+# backend/app/main.py
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.core.config import settings
 from app.api.auth_router import router as auth_router
-from app.api.trades_router import router as trades_router
+from app.db.database import Base, engine
 
+# ✅ Initialize FastAPI app
+app = FastAPI(title="AI Trading Assistant")
 
-app = FastAPI(title="AI Trading Assistant API")
+# ✅ CORS Configuration
+origins = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+]
 
-
-origins = [o.strip() for o in settings.ALLOWED_ORIGINS.split(",")]
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
-    allow_credentials=True,
-    allow_methods=["*"],
+    allow_credentials=True,     # 🔥 Needed for cookies / auth
+    allow_methods=["*"],        # Allow POST, GET, OPTIONS, etc.
     allow_headers=["*"],
 )
 
+# ✅ Initialize DB
+@app.on_event("startup")
+def on_startup():
+    print("🔧 Initializing database tables...")
+    Base.metadata.create_all(bind=engine)
+    print("✅ Database tables are ready.")
 
-app.include_router(auth_router)
-app.include_router(trades_router)
+# ✅ Routers
+app.include_router(auth_router, prefix="/auth", tags=["Authentication"])
 
-
-@app.get("/")
+# ✅ Health check
+@app.get("/", tags=["Health"])
 def root():
-    return {"ok": True}
+    return {"status": "ok"}

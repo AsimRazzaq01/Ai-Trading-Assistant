@@ -1,11 +1,14 @@
-# -------------------------
-# 1. Builder stage
-# -------------------------
-FROM node:20-alpine AS builder
+# frontend/Dockerfile
 
+# ============================================================
+# 1️⃣  Builder stage
+# ============================================================
+FROM node:20-alpine AS builder
 WORKDIR /app
 
-# Install deps first (cached layer if package.json/lockfile unchanged)
+# ------------------------------------------------------------
+# Install dependencies first (cached layer if lockfile unchanged)
+# ------------------------------------------------------------
 COPY package.json package-lock.json* pnpm-lock.yaml* yarn.lock* ./
 RUN \
   if [ -f package-lock.json ]; then npm ci; \
@@ -14,31 +17,55 @@ RUN \
   else npm install; \
   fi
 
-# Copy all project files
+# ------------------------------------------------------------
+# Copy project files
+# ------------------------------------------------------------
 COPY . .
 
-# --- FIX: allow NEXT_PUBLIC_API_URL to be passed into the build ---
-ARG NEXT_PUBLIC_API_URL
-ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+# ------------------------------------------------------------
+# Build-time environment variables
+# ------------------------------------------------------------
+# ✅ Accept build args from docker-compose (or Vercel)
+ARG NEXT_PUBLIC_API_URL_BROWSER
+ARG API_URL_INTERNAL
 
-# Build Next.js app with standalone output
+# ✅ Provide defaults for local Docker builds
+# - `NEXT_PUBLIC_API_URL_BROWSER` is what browsers see (localhost:8000)
+# - `API_URL_INTERNAL` is what the container uses internally (ai_backend:8000)
+ENV NEXT_PUBLIC_API_URL_BROWSER=${NEXT_PUBLIC_API_URL_BROWSER:-http://localhost:8000}
+ENV API_URL_INTERNAL=${API_URL_INTERNAL:-http://ai_backend:8000}
+
+# ------------------------------------------------------------
+# Build the Next.js app (standalone for smaller runtime image)
+# ------------------------------------------------------------
 RUN npm run build
 
-# -------------------------
-# 2. Runtime stage
-# -------------------------
+# ============================================================
+# 2️⃣  Runtime stage
+# ============================================================
 FROM node:20-alpine AS runner
-
 WORKDIR /app
 
 ENV NODE_ENV=production
 ENV PORT=3000
 
-# Copy only the built app + runtime deps from builder
+# ------------------------------------------------------------
+# Copy compiled build output
+# ------------------------------------------------------------
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 
+# ------------------------------------------------------------
+# Runtime environment variables
+# These can still be overridden by docker-compose or Vercel.
+# ------------------------------------------------------------
+ENV NEXT_PUBLIC_API_URL_BROWSER=${NEXT_PUBLIC_API_URL_BROWSER:-http://localhost:8000}
+ENV API_URL_INTERNAL=${API_URL_INTERNAL:-http://ai_backend:8000}
+
 EXPOSE 3000
 
+# ------------------------------------------------------------
+# Start the app
+# ------------------------------------------------------------
 CMD ["node", "server.js"]

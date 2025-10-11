@@ -1,8 +1,12 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+# ============================================
+# 🧩 Root .gitignore for Ai-Trading-Assistant
+# ============================================
 
-# dependencies
-/node_modules
-/.pnp
+# --------------------------------------------
+# Node / Frontend
+# --------------------------------------------
+node_modules/
+.pnp
 .pnp.*
 .yarn/*
 !.yarn/patches
@@ -10,49 +14,60 @@
 !.yarn/releases
 !.yarn/versions
 
-# testing
-/coverage
+# Next.js build artifacts
+.next/
+.out/
+.turbo/
+build/
+coverage/
 
-# next.js
-/.next/
-/out/
+# Frontend env files (keep only example)
+frontend/.env
+frontend/.env.local
+!frontend/.env.example
 
-# production
-/build
+# --------------------------------------------
+# Python / Backend
+# --------------------------------------------
+backend/.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.sqlite3
+.env
+!backend/.env.example
 
-# misc
+# --------------------------------------------
+# Docker
+# --------------------------------------------
+*.pid
+*.log
+dbdata/
+*.bak
+*.tar
+*.tmp
+
+# --------------------------------------------
+# System / IDE
+# --------------------------------------------
 .DS_Store
-*.pem
+.vscode/
+.idea/
+*.swp
+*.swo
 
-# debug
+# --------------------------------------------
+# Logs / Debugging
+# --------------------------------------------
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-.pnpm-debug.log*
+pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
-.env*
-
-# vercel
-.vercel
-
-# typescript
+# --------------------------------------------
+# Hosting / Build Systems
+# --------------------------------------------
+.vercel/
 *.tsbuildinfo
 next-env.d.ts
-
-
-
-# Frontend (Next.js)
-/frontend/node_modules/
-/frontend/.next/
-/frontend/.env
-/frontend/.turbo/
-
-# Backend (Python)
-/backend/.venv/
-__pycache__/
-*.pyc
-
-# OS / Editor
-.DS_Store
-.vscode/
