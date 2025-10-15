@@ -1,59 +1,40 @@
+// frontend/src/app/(protected)/settings/page.tsx
+
 "use client"; // allows interactivity on this page
 
 import { useState, useEffect } from "react";
-import { useTheme } from "@/context/ThemeContext";
 
 export default function SettingsPage() {
-  const { theme, setTheme } = useTheme(); // ✅ global theme
   const [user, setUser] = useState<{ email: string; username?: string } | null>(null);
   const [status, setStatus] = useState("");
+  const [darkMode, setDarkMode] = useState(false);
   const [notifications, setNotifications] = useState(false);
-
-  // ✅ Fetch user info on load
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const res = await fetch("http://localhost:8000/auth/me", {
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-        });
-
-        if (!res.ok) throw new Error("Failed to load user data");
-        const data = await res.json();
-        setUser(data);
-      } catch (err) {
-        console.error("❌ Error fetching user:", err);
-      }
-    };
-
-    fetchUser();
-  }, []);
-
-  // ✅ Toggle + save theme to backend
-  const handleThemeToggle = async () => {
-    const newTheme = theme === "light" ? "dark" : "light";
-    setTheme(newTheme);
-    localStorage.setItem("theme", newTheme);
-    setStatus("Saving theme...");
-
+  
+useEffect(() => {
+  const fetchUser = async () => {
     try {
-      const res = await fetch("http://localhost:8000/users/theme", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newTheme),
-        credentials: "include",
+      const res = await fetch("http://localhost:8000/auth/me", {
+        headers: {
+          "Content-Type": "application/json",
+          // Later, once login works:
+          // Authorization: `Bearer ${localStorage.getItem("access_token")}`,
+        },
+        credentials: "include", // includes cookies if backend sets them
       });
-      if (!res.ok) throw new Error(`Failed to update theme: ${res.status}`);
-      setStatus("✅ Theme saved!");
+
+      if (!res.ok) throw new Error("Failed to load user data");
+
+      const data = await res.json();
+      setUser(data); // ✅ fill the UI with real user info
     } catch (err) {
-      console.error("Error updating theme:", err);
-      setStatus("❌ Error saving theme");
-    } finally {
-      setTimeout(() => setStatus(""), 2500);
+      console.error("❌ Error fetching user:", err);
     }
   };
 
-  // ✅ Just your existing helper methods
+  fetchUser();
+}, []);
+
+
   const handleSaveChanges = () => {
     setStatus("Saving...");
     setTimeout(() => {
@@ -79,7 +60,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="flex min-h-screen bg-gray-100 dark:bg-gray-900 transition-colors duration-300">
+    <div className="flex min-h-screen bg-gray-100">
       {/* Sidebar */}
       <aside className="w-64 bg-gray-800 text-white flex flex-col p-4">
         <h2 className="text-2xl font-semibold mb-6">Profit Path</h2>
@@ -104,41 +85,41 @@ export default function SettingsPage() {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 p-8 text-gray-900 dark:text-gray-100">
-        <h1 className="text-3xl font-bold text-blue-700 dark:text-blue-400 mb-6">
+      <main className="flex-1 p-8">
+        <h1 className="text-3xl font-bold text-blue-700 mb-6">
           Account Settings ⚙️
         </h1>
 
         {/* --- Account Information --- */}
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow max-w-lg">
-          <h2 className="text-xl font-semibold mb-4 text-gray-700 dark:text-gray-200">
+        <div className="bg-white p-6 rounded-lg shadow max-w-lg">
+          <h2 className="text-xl font-semibold mb-4 text-gray-700">
             Account Information
           </h2>
 
           <label className="block mb-4">
-            <span className="text-gray-700 dark:text-gray-300 font-medium">Username</span>
+            <span className="text-gray-700 font-medium">Username</span>
             <input
               type="text"
               defaultValue={user.username}
-              className="w-full border p-2 rounded mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
+              className="w-full border p-2 rounded mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </label>
 
           <label className="block mb-4">
-            <span className="text-gray-700 dark:text-gray-300 font-medium">Email</span>
+            <span className="text-gray-700 font-medium">Email</span>
             <input
               type="email"
               defaultValue={user.email}
-              className="w-full border p-2 rounded mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
+              className="w-full border p-2 rounded mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </label>
 
           <label className="block mb-6">
-            <span className="text-gray-700 dark:text-gray-300 font-medium">Password</span>
+            <span className="text-gray-700 font-medium">Password</span>
             <input
               type="password"
               placeholder="••••••••"
-              className="w-full border p-2 rounded mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
+              className="w-full border p-2 rounded mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </label>
 
@@ -151,8 +132,8 @@ export default function SettingsPage() {
         </div>
 
         {/* --- Preferences --- */}
-        <div className="mt-8 bg-white dark:bg-gray-800 p-6 rounded-lg shadow max-w-lg">
-          <h2 className="text-xl font-semibold mb-4 text-gray-700 dark:text-gray-200">
+        <div className="mt-8 bg-white p-6 rounded-lg shadow max-w-lg">
+          <h2 className="text-xl font-semibold mb-4 text-gray-700">
             Preferences
           </h2>
 
@@ -160,11 +141,11 @@ export default function SettingsPage() {
             <input
               id="darkMode"
               type="checkbox"
-              checked={theme === "dark"}
-              onChange={handleThemeToggle}
+              checked={darkMode}
+              onChange={(e) => setDarkMode(e.target.checked)}
               className="h-4 w-4 text-blue-600 border-gray-300 rounded"
             />
-            <label htmlFor="darkMode" className="ml-2 text-gray-700 dark:text-gray-300">
+            <label htmlFor="darkMode" className="ml-2 text-gray-700">
               Enable Dark Mode
             </label>
           </div>
@@ -177,7 +158,7 @@ export default function SettingsPage() {
               onChange={(e) => setNotifications(e.target.checked)}
               className="h-4 w-4 text-blue-600 border-gray-300 rounded"
             />
-            <label htmlFor="notifications" className="ml-2 text-gray-700 dark:text-gray-300">
+            <label htmlFor="notifications" className="ml-2 text-gray-700">
               Enable Email Notifications
             </label>
           </div>
@@ -192,9 +173,7 @@ export default function SettingsPage() {
 
         {/* --- Status Message --- */}
         {status && (
-          <p className="mt-6 text-center text-green-600 dark:text-green-400 font-medium">
-            {status}
-          </p>
+          <p className="mt-6 text-center text-green-600 font-medium">{status}</p>
         )}
       </main>
     </div>

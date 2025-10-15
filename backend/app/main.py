@@ -2,8 +2,8 @@
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from app.api.auth_router import router as auth_router
 from app.db.database import Base, engine
-from app.api import auth_router, trades_router, users
 
 # ✅ Initialize FastAPI app
 app = FastAPI(title="AI Trading Assistant")
@@ -30,9 +30,7 @@ def on_startup():
     print("✅ Database tables are ready.")
 
 # ✅ Routers
-app.include_router(auth_router.router)
-app.include_router(trades_router.router)
-app.include_router(users.router)
+app.include_router(auth_router, prefix="/auth", tags=["Authentication"])
 
 # ✅ Health check
 @app.get("/", tags=["Health"])
