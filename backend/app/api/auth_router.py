@@ -10,7 +10,6 @@ from app.db.database import get_db
 from app.db import models
 from app.core.security import hash_password, create_access_token, verify_password
 from app.core.config import settings
-from app.api.deps import get_current_user_from_cookie
 
 router = APIRouter()
 
@@ -93,8 +92,26 @@ def logout(response: Response):
     return {"message": "Logged out"}
 
 
-@router.get("/me", response_model=dict)
-def read_me(current_user: models.User = Depends(get_current_user_from_cookie)):
-    """Get current logged-in user."""
-    return {"id": current_user.id, "email": current_user.email}
+@router.get("/me")
+def read_me(authorization: Optional[str] = Header(None), db: Session = Depends(get_db)):
+    """Get current logged-in user from Bearer token."""
+    if not authorization or not authorization.lower().startswith("bearer "):
+        raise HTTPException(status_code=401, detail="Authentication required")
+
+    token = authorization.split(" ", 1)[1]
+    try:
+        payload = jwt.decode(
+            token,
+            settings.JWT_SECRET_KEY,
+            algorithms=[settings.JWT_ALGORITHM],
+        )
+        user_id = int(payload.get("sub"))
+    except (JWTError, ValueError, TypeError):
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+
+    user = db.get(models.User, user_id)
+    if not user:
+        raise HTTPException(status_code=401, detail="User not found")
+
+    return {"id": user.id, "email": user.email}
 

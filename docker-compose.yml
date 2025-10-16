@@ -4,6 +4,8 @@
 # 🚀 PROFIT PATH — Full Stack (Postgres + FastAPI + Next.js)
 # ============================================================
 
+version: "3.9"
+
 services:
   # ----------------------------------------------------------
   # 🐘 PostgreSQL Database

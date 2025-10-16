@@ -22,7 +22,6 @@ build/
 coverage/
 
 # Frontend env files (keep only example)
-.env
 frontend/.env
 frontend/.env.local
 !frontend/.env.example
