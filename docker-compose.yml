@@ -31,9 +31,6 @@ services:
       context: ./backend
     container_name: ai_backend
     restart: unless-stopped
-    env_file:
-      - ./.env
-      - ./backend/.env
     depends_on:
       - ai_db
     ports:
@@ -42,6 +39,7 @@ services:
       DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg2://postgres:newpassword123@ai_db:5432/ai_trading}
       JWT_SECRET_KEY: ${JWT_SECRET_KEY:-supersecretkey}
       ALLOWED_ORIGINS: "http://localhost:3000,http://127.0.0.1:3000,http://ai_frontend:3000"
+      FMP_API_KEY: ${FMP_API_KEY:-}
 
   # ----------------------------------------------------------
   # 💻 Next.js Frontend
@@ -55,8 +53,6 @@ services:
         API_URL_INTERNAL: http://ai_backend:8000
     container_name: ai_frontend
     restart: unless-stopped
-    env_file:
-      - ./.env
     environment:
       # ✅ Runtime environment variables
       NEXT_PUBLIC_API_URL_BROWSER: http://localhost:8000
