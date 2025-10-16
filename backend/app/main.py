@@ -3,6 +3,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.auth_router import router as auth_router
+from app.api.portfolio_router import router as portfolio_router
+from app.api.market_data_router import router as market_data_router
 from app.db.database import Base, engine
 
 # ✅ Initialize FastAPI app
@@ -31,6 +33,8 @@ def on_startup():
 
 # ✅ Routers
 app.include_router(auth_router, prefix="/auth", tags=["Authentication"])
+app.include_router(portfolio_router, prefix="/portfolio", tags=["Portfolio"])
+app.include_router(market_data_router, prefix="/market-data", tags=["Market Data"])
 
 # ✅ Health check
 @app.get("/", tags=["Health"])
