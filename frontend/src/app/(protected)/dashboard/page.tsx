@@ -97,7 +97,11 @@ export default function DashboardPage() {
             setTicker("");
             setQuantity("");
         } catch (err) {
-            setError(err.message);
+            if (err instanceof Error) {
+                setError(err.message);
+            } else {
+                setError("An unknown error occurred");
+            }
         }
     };
 
@@ -111,7 +115,11 @@ export default function DashboardPage() {
             const updatedPortfolio = portfolio.filter((item) => item.id !== id);
             setPortfolio(updatedPortfolio);
         } catch (err) {
-            setError(err.message);
+            if (err instanceof Error) {
+                setError(err.message);
+            } else {
+                setError("An unknown error occurred");
+            }
         }
     };
 
