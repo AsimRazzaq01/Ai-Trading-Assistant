@@ -10,6 +10,7 @@ from app.db.database import get_db
 from app.db import models
 from app.core.security import hash_password, create_access_token, verify_password
 from app.core.config import settings
+from app.api.deps import get_current_user_from_cookie
 
 router = APIRouter()
 
@@ -92,4 +93,8 @@ def logout(response: Response):
     return {"message": "Logged out"}
 
 
+@router.get("/me", response_model=dict)
+def read_me(current_user: models.User = Depends(get_current_user_from_cookie)):
+    """Get current logged-in user."""
+    return {"id": current_user.id, "email": current_user.email}
 
