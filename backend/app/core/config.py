@@ -31,6 +31,9 @@ class Settings(BaseSettings):
     GITHUB_CLIENT_SECRET: str = ""
     GITHUB_REDIRECT_URI: str = ""
 
+    # --- Third-Party APIs ---
+    FMP_API_KEY: str = ""
+
     class Config:
         env_file = ".env"
 
