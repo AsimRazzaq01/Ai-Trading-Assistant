@@ -57,32 +57,54 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db)):
     return {"message": "User registered successfully"}
 
 
+#@router.post("/login")
+# def login(payload: LoginRequest, response: Response, db: Session = Depends(get_db)):
+#     """Login with email or username."""
+#     q = db.query(models.User)
+#
+#     if payload.email:
+#         db_user = q.filter(models.User.email == payload.email).first()
+#     else:
+#         db_user = q.filter(models.User.username == payload.username).first()
+#
+#     if not db_user or not verify_password(payload.password, db_user.hashed_password):
+#         raise HTTPException(status_code=400, detail="Invalid email/username or password")
+#
+#     token = create_access_token({"sub": str(db_user.id)})
+#
+#     # ✅ Send HttpOnly cookie for SSR use
+#     response.set_cookie(
+#         key="access_token",
+#         value=token,
+#         httponly=True,
+#         samesite="lax",
+#         max_age=60 * 60 * 24,
+#         path="/",
+#     )
+#
+#     return {"message": "Login successful", "access_token": token, "token_type": "bearer"}
+
+
+
 @router.post("/login")
 def login(payload: LoginRequest, response: Response, db: Session = Depends(get_db)):
-    """Login with email or username."""
-    q = db.query(models.User)
-
-    if payload.email:
-        db_user = q.filter(models.User.email == payload.email).first()
-    else:
-        db_user = q.filter(models.User.username == payload.username).first()
-
-    if not db_user or not verify_password(payload.password, db_user.hashed_password):
-        raise HTTPException(status_code=400, detail="Invalid email/username or password")
-
+    # ... your user lookup + token creation remains the same ...
     token = create_access_token({"sub": str(db_user.id)})
 
-    # ✅ Send HttpOnly cookie for SSR use
+    # Cookie flags: Lax for localhost; None+Secure for https (Vercel/Render)
+    is_prod = settings.ENV.lower() == "production"
     response.set_cookie(
         key="access_token",
         value=token,
         httponly=True,
-        samesite="lax",
+        samesite="none" if is_prod else "lax",
+        secure=True if is_prod else False,
         max_age=60 * 60 * 24,
         path="/",
     )
 
     return {"message": "Login successful", "access_token": token, "token_type": "bearer"}
+
 
 
 @router.post("/logout")

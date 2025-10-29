@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: profitpath-api
+    env: docker
+    plan: starter         # free works too; pick what you need
+    autoDeploy: true
+    region: oregon        # choose nearest to most users
+    branch: main
+    healthCheckPath: /
+    # Render injects PORT; our Dockerfile honors it
+    envVars:
+      - key: ENV
+        value: production
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: profitpath-db
+          property: connectionString
+
+databases:
+  - name: profitpath-db
+    plan: starter         # pick according to usage
+    region: oregon

@@ -14,6 +14,8 @@ class Settings(BaseSettings):
     JWT_ALGORITHM: str = "HS256"
     JWT_EXPIRE_MINUTES: int = 60
 
+    ENV: str = "development"  # "production" on Render
+
     # --- Cookies ---
     COOKIE_NAME: str = "access_token"
     COOKIE_SECURE: bool = False
