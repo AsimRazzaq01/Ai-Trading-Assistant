@@ -4,6 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.auth_router import router as auth_router
 from app.db.database import Base, engine
+from app.core.config import settings
 
 # ✅ Initialize FastAPI app
 app = FastAPI(title="AI Trading Assistant")
@@ -14,13 +15,30 @@ origins = [
     "http://127.0.0.1:3000",
 ]
 
+# app.add_middleware(
+#     CORSMiddleware,
+#     allow_origins=origins,
+#     allow_credentials=True,     # 🔥 Needed for cookies / auth
+#     allow_methods=["*"],        # Allow POST, GET, OPTIONS, etc.
+#     allow_headers=["*"],
+# )
+
+
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,     # 🔥 Needed for cookies / auth
-    allow_methods=["*"],        # Allow POST, GET, OPTIONS, etc.
+    allow_origins=[
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        # add your deployed frontend origins (https!)
+        "https://YOUR-VERCEL-APP.vercel.app",
+        "https://www.YOUR-CUSTOM-DOMAIN.com",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 # ✅ Initialize DB
 @app.on_event("startup")
