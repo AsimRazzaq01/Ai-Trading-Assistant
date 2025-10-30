@@ -31,8 +31,8 @@ app.add_middleware(
         "http://localhost:3000",
         "http://127.0.0.1:3000",
         # add your deployed frontend origins (https!)
-        "https://YOUR-VERCEL-APP.vercel.app",
-        "https://www.YOUR-CUSTOM-DOMAIN.com",
+        "https://ai-trading-assistant-steel.vercel.app/",
+
     ],
     allow_credentials=True,
     allow_methods=["*"],
