@@ -1,3 +1,5 @@
+#backend/Dockerfile
+
 # ============================
 # 🐍 Base image
 # ============================
@@ -29,16 +31,14 @@ COPY ./app /app/app
 # ⚙️ Environment config
 # ----------------------------
 ENV PYTHONUNBUFFERED=1 \
-    PYTHONDONTWRITEBYTECODE=1 \
-    PORT=8000
-
-# Expose FastAPI port
-EXPOSE 8000
+    PYTHONDONTWRITEBYTECODE=1
 
 # ----------------------------
 # 🚀 Start FastAPI app
 # ----------------------------
+# ✅ Use Railway's dynamic $PORT (or fallback to 8000 locally)
 CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+
 
 
 
