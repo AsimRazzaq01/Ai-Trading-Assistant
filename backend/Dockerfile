@@ -12,7 +12,7 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y \
     build-essential \
     libpq-dev \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/
 
 # ----------------------------
 # 📦 Install Python dependencies
@@ -37,7 +37,7 @@ ENV PYTHONUNBUFFERED=1 \
 # Expose FastAPI port
 EXPOSE 8000
 
-# Use $PORT if provided by host (Render), else 8000 for local/dev
+# Use $PORT if provided by host (Railway/Render), else 8000 for local/dev
 CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
 
 # ----------------------------
