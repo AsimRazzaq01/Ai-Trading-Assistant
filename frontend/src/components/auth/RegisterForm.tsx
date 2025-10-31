@@ -37,11 +37,13 @@ export default function RegisterForm() {
         if (isEmail) body.email = data.emailOrUsername; else body.username = data.emailOrUsername;
 
 
-        const res = await fetch("/api/register", {
+        const backend = process.env.NEXT_PUBLIC_API_URL_BROWSER || "http://localhost:8000";
+        const res = await fetch(`${backend}/auth/register`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(body),
         });
+
         if (res.ok) {
 // auto-login not implemented; guide user to Login
             window.location.href = "/login";
@@ -74,3 +76,5 @@ export default function RegisterForm() {
         </form>
     );
 }
+
+
