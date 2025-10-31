@@ -76,15 +76,26 @@ def login(payload: LoginRequest, response: Response, db: Session = Depends(get_d
 
     # ✅ Environment-based cookie flags
     is_prod = settings.ENV.lower() == "production"
+    # response.set_cookie(
+    #     key=settings.COOKIE_NAME,
+    #     value=token,
+    #     httponly=True,
+    #     samesite="none" if is_prod else "lax",
+    #     secure=is_prod,
+    #     max_age=60 * 60 * 24,
+    #     path="/",
+    # )
+
     response.set_cookie(
         key=settings.COOKIE_NAME,
         value=token,
         httponly=True,
-        samesite="none" if is_prod else "lax",
-        secure=is_prod,
+        samesite=settings.COOKIE_SAMESITE,
+        secure=settings.COOKIE_SECURE,
         max_age=60 * 60 * 24,
         path="/",
     )
+
 
     return {"message": "Login successful", "access_token": token, "token_type": "bearer"}
 

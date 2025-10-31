@@ -9,12 +9,24 @@ from app.core.config import settings
 # ✅ Initialize FastAPI app
 app = FastAPI(title="AI Trading Assistant")
 
-# ✅ CORS Configuration
-origins = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-]
+# ✅ Unified CORS setup (reads from .env)
+origins = [o.strip().rstrip("/") for o in settings.ALLOWED_ORIGINS.split(",")]
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+# # ✅ CORS Configuration
+# origins = [
+#     "http://localhost:3000",
+#     "http://127.0.0.1:3000",
+# ]
+#
 # app.add_middleware(
 #     CORSMiddleware,
 #     allow_origins=origins,
@@ -30,7 +42,6 @@ app.add_middleware(
     allow_origins=[
         # add your deployed frontend origins (https!)
         "https://ai-trading-assistant-steel.vercel.app/",
-        #
         "http://localhost:3000",
         "http://127.0.0.1:3000",
     ],
