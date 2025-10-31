@@ -1,11 +1,12 @@
-# backend/app/api/auth_router.py
+# ============================================================
+# 📁 backend/app/api/auth_router.py
+# ============================================================
 
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, Response, Header
+from fastapi import APIRouter, Depends, HTTPException, Response, Header, Cookie
 from pydantic import BaseModel, EmailStr, Field, model_validator
 from sqlalchemy.orm import Session
 from jose import jwt, JWTError
-
 from app.db.database import get_db
 from app.db import models
 from app.core.security import hash_password, create_access_token, verify_password
@@ -27,7 +28,6 @@ class LoginRequest(BaseModel):
     username: Optional[str] = None
     password: str = Field(..., min_length=6)
 
-    # ✅ Pydantic v2 validator — replaces old @validator
     @model_validator(mode="after")
     def ensure_identifier(self):
         if not self.email and not self.username:
@@ -59,13 +59,13 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db)):
 
 @router.post("/login")
 def login(payload: LoginRequest, response: Response, db: Session = Depends(get_db)):
-    """Login with email or username."""
+    """Login with email or username and issue JWT cookie."""
     q = db.query(models.User)
+    db_user = None
 
-    # ✅ Fix: this lookup was missing in your last version
     if payload.email:
         db_user = q.filter(models.User.email == payload.email).first()
-    else:
+    elif payload.username:
         db_user = q.filter(models.User.username == payload.username).first()
 
     if not db_user or not verify_password(payload.password, db_user.hashed_password):
@@ -74,46 +74,62 @@ def login(payload: LoginRequest, response: Response, db: Session = Depends(get_d
     # ✅ Create JWT token
     token = create_access_token({"sub": str(db_user.id)})
 
-    # ✅ Environment-based cookie flags
-    is_prod = settings.ENV.lower() == "production"
-    # response.set_cookie(
-    #     key=settings.COOKIE_NAME,
-    #     value=token,
-    #     httponly=True,
-    #     samesite="none" if is_prod else "lax",
-    #     secure=is_prod,
-    #     max_age=60 * 60 * 24,
-    #     path="/",
-    # )
+    # =========================================================
+    # 🍪 Cookie configuration (dynamic based on environment)
+    # =========================================================
+    cookie_domain = None
+    if settings.ENV.lower() == "production":
+        # Allow cookies from backend to be valid across HTTPS origins
+        cookie_domain = "profitpath-api-production.up.railway.app"
 
     response.set_cookie(
         key=settings.COOKIE_NAME,
         value=token,
         httponly=True,
-        samesite=settings.COOKIE_SAMESITE,
-        secure=settings.COOKIE_SECURE,
-        max_age=60 * 60 * 24,
+        samesite=settings.COOKIE_SAMESITE,   # "none" in production
+        secure=settings.COOKIE_SECURE,       # True in production
+        max_age=60 * 60 * 24,                # 1 day
         path="/",
+        domain=cookie_domain,
     )
 
-
-    return {"message": "Login successful", "access_token": token, "token_type": "bearer"}
+    return {
+        "message": "Login successful",
+        "access_token": token,
+        "token_type": "bearer",
+    }
 
 
 @router.post("/logout")
 def logout(response: Response):
-    """Clear cookie on logout."""
-    response.delete_cookie(settings.COOKIE_NAME, path="/")
+    """Clear authentication cookie."""
+    response.delete_cookie(
+        key=settings.COOKIE_NAME,
+        path="/",
+        domain="profitpath-api-production.up.railway.app" if settings.ENV.lower() == "production" else None,
+    )
     return {"message": "Logged out"}
 
 
 @router.get("/me")
-def read_me(authorization: Optional[str] = Header(None), db: Session = Depends(get_db)):
-    """Get current logged-in user from Bearer token."""
-    if not authorization or not authorization.lower().startswith("bearer "):
+def read_me(
+        authorization: Optional[str] = Header(None),
+        access_token: Optional[str] = Cookie(None),
+        db: Session = Depends(get_db)
+):
+    """Return current user based on Bearer or Cookie JWT."""
+    token = None
+
+    # ✅ 1. Prefer Bearer header
+    if authorization and authorization.lower().startswith("bearer "):
+        token = authorization.split(" ", 1)[1]
+    # ✅ 2. Fallback to cookie
+    elif access_token:
+        token = access_token
+
+    if not token:
         raise HTTPException(status_code=401, detail="Authentication required")
 
-    token = authorization.split(" ", 1)[1]
     try:
         payload = jwt.decode(
             token,
@@ -129,6 +145,7 @@ def read_me(authorization: Optional[str] = Header(None), db: Session = Depends(g
         raise HTTPException(status_code=401, detail="User not found")
 
     return {"id": user.id, "email": user.email}
+
 
 
 
