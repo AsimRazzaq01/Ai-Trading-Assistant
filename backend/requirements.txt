@@ -15,7 +15,8 @@ psycopg2-binary==2.9.9
 # --- Authentication & Security ---
 # (Pinned versions prevent bcrypt/passlib runtime errors on Python 3.12)
 passlib[bcrypt]==1.7.4
-bcrypt==4.1.2
+bcrypt==4.0.1
+# bcrypt==4.1.2
 python-jose==3.3.0
 
 # --- Data Validation ---
