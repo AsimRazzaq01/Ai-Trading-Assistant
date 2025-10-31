@@ -15,7 +15,8 @@ const LoginSchema = z.object({
 type LoginFields = z.infer<typeof LoginSchema>;
 
 export default function LoginForm() {
-    const backend = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+    // const backend = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+    const backend = process.env.NEXT_PUBLIC_API_URL_BROWSER || "http://localhost:8000";
     const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<LoginFields>({
         resolver: zodResolver(LoginSchema),
     });
@@ -34,6 +35,11 @@ export default function LoginForm() {
             });
 
             const result = await res.json().catch(() => ({} as any));
+
+            if (res.status === 422) {
+                alert("Invalid input format (check your email/password)");
+            }
+
 
             if (res.ok) {
                 // Save token for client-side API calls (avoids SameSite dev issues)
