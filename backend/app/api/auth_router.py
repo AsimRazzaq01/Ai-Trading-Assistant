@@ -6,7 +6,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Response, Header, Cookie
 from pydantic import BaseModel, EmailStr, Field, model_validator
 from sqlalchemy.orm import Session
-from jose import jwt, JWTError
+from jose import jwt, JWTError, ExpiredSignatureError
 from app.db.database import get_db
 from app.db import models
 from app.core.security import hash_password, create_access_token, verify_password
@@ -53,7 +53,6 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db)):
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
-
     return {"message": "User registered successfully"}
 
 
@@ -75,13 +74,8 @@ def login(payload: LoginRequest, response: Response, db: Session = Depends(get_d
     token = create_access_token({"sub": str(db_user.id)})
 
     # =========================================================
-    # 🍪 Cookie configuration (dynamic based on environment)
+    # 🍪 Cookie configuration (NO domain param for cross-origin)
     # =========================================================
-    cookie_domain = None
-    if settings.ENV.lower() == "production":
-        # Allow cookies from backend to be valid across HTTPS origins
-        cookie_domain = "profitpath-api-production.up.railway.app"
-
     response.set_cookie(
         key=settings.COOKIE_NAME,
         value=token,
@@ -90,7 +84,6 @@ def login(payload: LoginRequest, response: Response, db: Session = Depends(get_d
         secure=settings.COOKIE_SECURE,       # True in production
         max_age=60 * 60 * 24,                # 1 day
         path="/",
-        domain=cookie_domain,
     )
 
     return {
@@ -105,8 +98,7 @@ def logout(response: Response):
     """Clear authentication cookie."""
     response.delete_cookie(
         key=settings.COOKIE_NAME,
-        path="/",
-        domain="profitpath-api-production.up.railway.app" if settings.ENV.lower() == "production" else None,
+        path="/"
     )
     return {"message": "Logged out"}
 
@@ -120,10 +112,9 @@ def read_me(
     """Return current user based on Bearer or Cookie JWT."""
     token = None
 
-    # ✅ 1. Prefer Bearer header
+    # ✅ Prefer Authorization header, else fallback to cookie
     if authorization and authorization.lower().startswith("bearer "):
         token = authorization.split(" ", 1)[1]
-    # ✅ 2. Fallback to cookie
     elif access_token:
         token = access_token
 
@@ -137,14 +128,17 @@ def read_me(
             algorithms=[settings.JWT_ALGORITHM],
         )
         user_id = int(payload.get("sub"))
+    except ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Token expired")
     except (JWTError, ValueError, TypeError):
-        raise HTTPException(status_code=401, detail="Invalid or expired token")
+        raise HTTPException(status_code=401, detail="Invalid token")
 
     user = db.get(models.User, user_id)
     if not user:
         raise HTTPException(status_code=401, detail="User not found")
 
     return {"id": user.id, "email": user.email}
+
 
 
 
