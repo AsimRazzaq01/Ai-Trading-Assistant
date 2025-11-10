@@ -4,13 +4,15 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.proxy_headers import ProxyHeadersMiddleware
 from app.api.auth_router import router as auth_router
-from app.api.debug_router import router as debug_router   # ✅ Added
+from app.api.debug_router import router as debug_router
 from app.db.database import Base, engine
 from app.core.config import settings
 
 # ============================================================
 # 🚀 FastAPI App Initialization
 # ============================================================
+
+print("🚀 Starting FastAPI backend...")
 
 app = FastAPI(title="AI Trading Assistant")
 
@@ -20,7 +22,7 @@ app = FastAPI(title="AI Trading Assistant")
 
 origins = [o.strip().rstrip("/") for o in settings.ALLOWED_ORIGINS.split(",")]
 
-print("🚀 Allowed origins:", origins)  # check Railway logs after deploy
+print("🚀 Allowed origins:", origins)
 
 app.add_middleware(
     CORSMiddleware,
@@ -34,9 +36,12 @@ app.add_middleware(
 # 🔒 Proxy Headers (Critical for Railway HTTPS)
 # ============================================================
 
-# ✅ Tells FastAPI to respect X-Forwarded-Proto headers
-# so cookies work properly under Railway’s HTTPS proxy
-app.add_middleware(ProxyHeadersMiddleware, trusted_hosts=["*"])
+try:
+    # ✅ Must be a list
+    app.add_middleware(ProxyHeadersMiddleware, trusted_hosts=["*"])
+    print("✅ ProxyHeadersMiddleware added successfully.")
+except Exception as e:
+    print(f"⚠️ Could not add ProxyHeadersMiddleware: {e}")
 
 # ============================================================
 # 🗄️ Database Setup
@@ -44,18 +49,18 @@ app.add_middleware(ProxyHeadersMiddleware, trusted_hosts=["*"])
 
 @app.on_event("startup")
 def on_startup():
-    print("🔧 Initializing database tables...")
-    Base.metadata.create_all(bind=engine)
-    print("✅ Database tables are ready.")
+    try:
+        print("🔧 Initializing database tables...")
+        Base.metadata.create_all(bind=engine)
+        print("✅ Database tables are ready.")
+    except Exception as e:
+        print(f"❌ Database init failed: {e}")
 
 # ============================================================
 # 🧩 Routers
 # ============================================================
 
-# Authentication routes
 app.include_router(auth_router, prefix="/auth", tags=["Authentication"])
-
-# ✅ Debug routes (for diagnosing production cookies)
 app.include_router(debug_router)
 
 # ============================================================
@@ -65,6 +70,11 @@ app.include_router(debug_router)
 @app.get("/", tags=["Health"])
 def root():
     return {"status": "ok"}
+
+
+
+
+
 
 
 
