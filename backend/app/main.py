@@ -3,8 +3,13 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.auth_router import router as auth_router
+from app.api.debug_router import router as debug_router   # ✅ Added
 from app.db.database import Base, engine
 from app.core.config import settings
+
+# ============================================================
+# 🚀 FastAPI App Initialization
+# ============================================================
 
 app = FastAPI(title="AI Trading Assistant")
 
@@ -21,17 +26,80 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# ============================================================
+# 🗄️ Database Setup
+# ============================================================
+
 @app.on_event("startup")
 def on_startup():
     print("🔧 Initializing database tables...")
     Base.metadata.create_all(bind=engine)
     print("✅ Database tables are ready.")
 
+# ============================================================
+# 🧩 Routers
+# ============================================================
+
+# Authentication routes
 app.include_router(auth_router, prefix="/auth", tags=["Authentication"])
+
+# ✅ Debug routes
+app.include_router(debug_router)
+
+# ============================================================
+# ❤️ Health Check
+# ============================================================
 
 @app.get("/", tags=["Health"])
 def root():
     return {"status": "ok"}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#
+# from fastapi import FastAPI
+# from fastapi.middleware.cors import CORSMiddleware
+# from app.api.auth_router import router as auth_router
+# from app.db.database import Base, engine
+# from app.core.config import settings
+#
+# app = FastAPI(title="AI Trading Assistant")
+#
+# # ✅ Unified CORS setup
+# origins = [o.strip().rstrip("/") for o in settings.ALLOWED_ORIGINS.split(",")]
+#
+# print("🚀 Allowed origins:", origins)  # check Railway logs after deploy
+#
+# app.add_middleware(
+#     CORSMiddleware,
+#     allow_origins=origins,
+#     allow_credentials=True,
+#     allow_methods=["*"],
+#     allow_headers=["*"],
+# )
+#
+# @app.on_event("startup")
+# def on_startup():
+#     print("🔧 Initializing database tables...")
+#     Base.metadata.create_all(bind=engine)
+#     print("✅ Database tables are ready.")
+#
+# app.include_router(auth_router, prefix="/auth", tags=["Authentication"])
+#
+# @app.get("/", tags=["Health"])
+# def root():
+#     return {"status": "ok"}
 
 
 
