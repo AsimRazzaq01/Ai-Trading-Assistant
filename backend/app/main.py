@@ -1,28 +1,34 @@
 # backend/app/main.py
 
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from starlette.middleware.proxy_headers import ProxyHeadersMiddleware
-from app.api.auth_router import router as auth_router
-from app.api.debug_router import router as debug_router
-from app.db.database import Base, engine
-from app.core.config import settings
+print("🚀 Booting FastAPI container...")
 
 # ============================================================
-# 🚀 FastAPI App Initialization
+# 🧩 Imports
 # ============================================================
+try:
+    from fastapi import FastAPI
+    from fastapi.middleware.cors import CORSMiddleware
+    from starlette.middleware.proxy_headers import ProxyHeadersMiddleware
+    from app.api.auth_router import router as auth_router
+    from app.api.debug_router import router as debug_router
+    from app.db.database import Base, engine
+    from app.core.config import settings
+    print("✅ Imports succeeded.")
+except Exception as e:
+    print(f"❌ Import failed during startup: {e}")
 
-print("🚀 Starting FastAPI backend...")
+# ============================================================
+# 🚀 FastAPI Initialization
+# ============================================================
 
 app = FastAPI(title="AI Trading Assistant")
 
 # ============================================================
-# 🌐 CORS Setup
+# 🌐 CORS Configuration
 # ============================================================
 
 origins = [o.strip().rstrip("/") for o in settings.ALLOWED_ORIGINS.split(",")]
-
-print("🚀 Allowed origins:", origins)
+print("🌍 Allowed origins:", origins)
 
 app.add_middleware(
     CORSMiddleware,
@@ -33,11 +39,11 @@ app.add_middleware(
 )
 
 # ============================================================
-# 🔒 Proxy Headers (Critical for Railway HTTPS)
+# 🔒 Proxy Headers for Railway HTTPS
 # ============================================================
 
 try:
-    # ✅ Must be a list
+    # ✅ Ensures FastAPI respects Railway’s X-Forwarded-Proto header
     app.add_middleware(ProxyHeadersMiddleware, trusted_hosts=["*"])
     print("✅ ProxyHeadersMiddleware added successfully.")
 except Exception as e:
@@ -60,7 +66,10 @@ def on_startup():
 # 🧩 Routers
 # ============================================================
 
+# Authentication routes
 app.include_router(auth_router, prefix="/auth", tags=["Authentication"])
+
+# Debug routes for diagnostics
 app.include_router(debug_router)
 
 # ============================================================
@@ -70,6 +79,12 @@ app.include_router(debug_router)
 @app.get("/", tags=["Health"])
 def root():
     return {"status": "ok"}
+
+@app.get("/healthz", tags=["Health"])
+def healthz():
+    """Used by Railway health checks."""
+    return {"message": "alive"}
+
 
 
 
