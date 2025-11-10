@@ -5,17 +5,22 @@ print("🚀 Booting FastAPI container...")
 # ============================================================
 # 🧩 Imports
 # ============================================================
+
+# Import essentials (should never fail)
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from app.api.auth_router import router as auth_router
+from app.api.debug_router import router as debug_router
+from app.db.database import Base, engine
+from app.core.config import settings
+
+# Try optional middleware
 try:
-    from fastapi import FastAPI
-    from fastapi.middleware.cors import CORSMiddleware
     from starlette.middleware.proxy_headers import ProxyHeadersMiddleware
-    from app.api.auth_router import router as auth_router
-    from app.api.debug_router import router as debug_router
-    from app.db.database import Base, engine
-    from app.core.config import settings
-    print("✅ Imports succeeded.")
-except Exception as e:
-    print(f"❌ Import failed during startup: {e}")
+    proxy_available = True
+except ImportError:
+    print("⚠️ Starlette version missing ProxyHeadersMiddleware — proxy support disabled.")
+    proxy_available = False
 
 # ============================================================
 # 🚀 FastAPI Initialization
@@ -39,15 +44,12 @@ app.add_middleware(
 )
 
 # ============================================================
-# 🔒 Proxy Headers for Railway HTTPS
+# 🔒 Proxy Headers (for Railway HTTPS)
 # ============================================================
 
-try:
-    # ✅ Ensures FastAPI respects Railway’s X-Forwarded-Proto header
+if proxy_available:
     app.add_middleware(ProxyHeadersMiddleware, trusted_hosts=["*"])
-    print("✅ ProxyHeadersMiddleware added successfully.")
-except Exception as e:
-    print(f"⚠️ Could not add ProxyHeadersMiddleware: {e}")
+    print("✅ ProxyHeadersMiddleware enabled.")
 
 # ============================================================
 # 🗄️ Database Setup
@@ -66,10 +68,7 @@ def on_startup():
 # 🧩 Routers
 # ============================================================
 
-# Authentication routes
 app.include_router(auth_router, prefix="/auth", tags=["Authentication"])
-
-# Debug routes for diagnostics
 app.include_router(debug_router)
 
 # ============================================================
