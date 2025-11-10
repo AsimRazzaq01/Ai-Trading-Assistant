@@ -2,6 +2,7 @@
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.proxy_headers import ProxyHeadersMiddleware
 from app.api.auth_router import router as auth_router
 from app.api.debug_router import router as debug_router   # ✅ Added
 from app.db.database import Base, engine
@@ -13,7 +14,10 @@ from app.core.config import settings
 
 app = FastAPI(title="AI Trading Assistant")
 
-# ✅ Unified CORS setup
+# ============================================================
+# 🌐 CORS Setup
+# ============================================================
+
 origins = [o.strip().rstrip("/") for o in settings.ALLOWED_ORIGINS.split(",")]
 
 print("🚀 Allowed origins:", origins)  # check Railway logs after deploy
@@ -25,6 +29,14 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# ============================================================
+# 🔒 Proxy Headers (Critical for Railway HTTPS)
+# ============================================================
+
+# ✅ Tells FastAPI to respect X-Forwarded-Proto headers
+# so cookies work properly under Railway’s HTTPS proxy
+app.add_middleware(ProxyHeadersMiddleware, trusted_hosts=["*"])
 
 # ============================================================
 # 🗄️ Database Setup
@@ -43,7 +55,7 @@ def on_startup():
 # Authentication routes
 app.include_router(auth_router, prefix="/auth", tags=["Authentication"])
 
-# ✅ Debug routes
+# ✅ Debug routes (for diagnosing production cookies)
 app.include_router(debug_router)
 
 # ============================================================
@@ -53,6 +65,7 @@ app.include_router(debug_router)
 @app.get("/", tags=["Health"])
 def root():
     return {"status": "ok"}
+
 
 
 
