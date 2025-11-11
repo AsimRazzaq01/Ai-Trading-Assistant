@@ -1,47 +1,128 @@
-// frontend/src/app/api/login/route.ts
+// ============================================================
+// 💻 frontend/src/app/api/login/route.ts
+// ============================================================
+
 import { NextRequest, NextResponse } from "next/server";
 
-export const runtime = "nodejs";
+export const runtime = "nodejs"; // ✅ ensure Node runtime (not Edge)
 
 export async function POST(req: NextRequest) {
     try {
-        // ✅ Dynamically choose backend depending on environment
+        // ============================================================
+        // 🌍 Choose backend (local vs prod)
+        // ============================================================
         const backend =
-            process.env.API_URL_INTERNAL?.trim() || // inside Docker/Next.js
-            process.env.NEXT_PUBLIC_API_URL_BROWSER?.trim() || // from browser
-            "http://localhost:8000"; // fallback for local dev
+            process.env.API_URL_INTERNAL?.trim() ||
+            process.env.NEXT_PUBLIC_API_URL_BROWSER?.trim() ||
+            (process.env.NODE_ENV === "production"
+                ? "https://ai-trading-assistant-backend-production.up.railway.app" // <-- replace with your real Railway backend URL
+                : "http://localhost:8000");
 
+        // ============================================================
+        // 📦 Forward login request
+        // ============================================================
         const body = await req.json();
 
-        const response = await fetch(`${backend}/auth/login`, {
+        const res = await fetch(`${backend}/auth/login`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(body),
-            credentials: "include",
         });
 
-        let data;
+        // ============================================================
+        // 🧠 Parse backend response
+        // ============================================================
+        let data: any;
         try {
-            data = await response.json();
+            data = await res.json();
         } catch {
-            data = { message: await response.text() };
+            data = { message: await res.text() };
         }
 
-        const next = NextResponse.json(data, { status: response.status });
+        // ============================================================
+        // 🍪 Forward Set-Cookie header to browser
+        // ============================================================
+        const out = NextResponse.json(data, { status: res.status });
+        const setCookie = res.headers.get("set-cookie");
+        if (setCookie) {
+            out.headers.set("Set-Cookie", setCookie);
+        }
 
-        const setCookie = response.headers.get("set-cookie");
-        if (setCookie) next.headers.set("set-cookie", setCookie);
-
-        return next;
-    } catch (err) {
-        console.error("❌ Login API error:", err);
+        return out;
+    } catch (error) {
+        console.error("❌ /api/login proxy error:", error);
         return NextResponse.json(
-            { error: "Login failed. Backend may be unreachable." },
+            { detail: "Login failed. Please try again." },
             { status: 500 }
         );
     }
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// // frontend/src/app/api/login/route.ts
+// import { NextRequest, NextResponse } from "next/server";
+//
+// export const runtime = "nodejs";
+//
+// export async function POST(req: NextRequest) {
+//     try {
+//         // ✅ Dynamically choose backend depending on environment
+//         const backend =
+//             process.env.API_URL_INTERNAL?.trim() || // inside Docker/Next.js
+//             process.env.NEXT_PUBLIC_API_URL_BROWSER?.trim() || // from browser
+//             "http://localhost:8000"; // fallback for local dev
+//
+//         const body = await req.json();
+//
+//         const response = await fetch(`${backend}/auth/login`, {
+//             method: "POST",
+//             headers: { "Content-Type": "application/json" },
+//             body: JSON.stringify(body),
+//             credentials: "include",
+//         });
+//
+//         let data;
+//         try {
+//             data = await response.json();
+//         } catch {
+//             data = { message: await response.text() };
+//         }
+//
+//         const next = NextResponse.json(data, { status: response.status });
+//
+//         const setCookie = response.headers.get("set-cookie");
+//         if (setCookie) next.headers.set("set-cookie", setCookie);
+//
+//         return next;
+//     } catch (err) {
+//         console.error("❌ Login API error:", err);
+//         return NextResponse.json(
+//             { error: "Login failed. Backend may be unreachable." },
+//             { status: 500 }
+//         );
+//     }
+// }
+//
 
 
 

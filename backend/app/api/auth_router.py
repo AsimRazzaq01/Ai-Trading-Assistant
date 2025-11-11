@@ -74,17 +74,24 @@ def login(payload: LoginRequest, response: Response, db: Session = Depends(get_d
     token = create_access_token({"sub": str(db_user.id)})
 
     # =========================================================
-    # 🍪 Cookie configuration (NO domain param for cross-origin)
+    # 🍪 Cookie configuration (env-aware)
     # =========================================================
-    response.set_cookie(
-        key=settings.COOKIE_NAME,
-        value=token,
-        httponly=True,
-        samesite=settings.COOKIE_SAMESITE,   # "none" in production
-        secure=settings.COOKIE_SECURE,       # True in production
-        max_age=60 * 60 * 24,                # 1 day
-        path="/",
-    )
+    is_prod = settings.ENV.lower() == "production"
+
+    cookie_kwargs = {
+        "key": settings.COOKIE_NAME,
+        "value": token,
+        "httponly": True,
+        "secure": True if is_prod else False,
+        "samesite": "none" if is_prod else "lax",
+        "max_age": 60 * 60 * 24,  # 1 day
+        "path": "/",
+    }
+
+    if is_prod and settings.COOKIE_DOMAIN:
+        cookie_kwargs["domain"] = settings.COOKIE_DOMAIN
+
+    response.set_cookie(**cookie_kwargs)
 
     return {
         "message": "Login successful",
@@ -98,7 +105,8 @@ def logout(response: Response):
     """Clear authentication cookie."""
     response.delete_cookie(
         key=settings.COOKIE_NAME,
-        path="/"
+        path="/",
+        domain=settings.COOKIE_DOMAIN or None,
     )
     return {"message": "Logged out"}
 
@@ -107,12 +115,11 @@ def logout(response: Response):
 def read_me(
         authorization: Optional[str] = Header(None),
         access_token: Optional[str] = Cookie(None),
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db),
 ):
     """Return current user based on Bearer or Cookie JWT."""
     token = None
 
-    # ✅ Prefer Authorization header, else fallback to cookie
     if authorization and authorization.lower().startswith("bearer "):
         token = authorization.split(" ", 1)[1]
     elif access_token:
@@ -138,6 +145,16 @@ def read_me(
         raise HTTPException(status_code=401, detail="User not found")
 
     return {"id": user.id, "email": user.email}
+
+
+
+
+
+
+
+
+
+
 
 
 
