@@ -1,48 +1,38 @@
 // frontend/src/app/api/logout/route.ts
+
 import { NextRequest, NextResponse } from "next/server";
 
-export const runtime = "nodejs"; // ✅ Needed to keep cookies working
+export const runtime = "nodejs";
 
-export async function POST(req: NextRequest) {
+// ✅ Works in both localhost and production
+export async function GET(req: NextRequest) {
     try {
-        // ✅ Dynamic backend resolution
         const backend =
             process.env.API_URL_INTERNAL?.trim() ||
             process.env.NEXT_PUBLIC_API_URL_BROWSER?.trim() ||
             "http://localhost:8000";
 
-        // ✅ Call FastAPI backend logout
-        const response = await fetch(`${backend}/auth/logout`, {
-            method: "POST",
-            credentials: "include", // includes cookies from user’s browser
+        const response = await fetch(`${backend}/auth/me`, {
+            method: "GET",
+            credentials: "include", // ✅ browser will send cookie automatically
+            cache: "no-store",
         });
 
-        // ✅ Determine base URL for redirect (local or production)
-        const baseUrl =
-            process.env.NEXT_PUBLIC_APP_URL?.trim() ||
-            (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
-
-        const redirect = NextResponse.redirect(`${baseUrl}/`, 302); // ✅ redirect home
-
-        // ✅ Pass cookie deletion back to client
-        const setCookie = response.headers.get("set-cookie");
-        if (setCookie) {
-            redirect.headers.set("set-cookie", setCookie);
-            console.log("🍪 Logout cleared cookie:", setCookie.split(";")[0]);
-        } else {
-            console.warn("⚠️ No Set-Cookie header on logout response");
+        if (!response.ok) {
+            return NextResponse.json(
+                { detail: "Session expired. Please log in again." },
+                { status: 401 }
+            );
         }
 
-        return redirect;
+        const data = await response.json();
+        return NextResponse.json(data, { status: response.status });
     } catch (err) {
-        console.error("❌ Logout API error:", err);
-
-        // ✅ Safe fallback redirect (even if backend unreachable)
-        const fallbackBase =
-            process.env.NEXT_PUBLIC_APP_URL?.trim() ||
-            (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
-
-        return NextResponse.redirect(`${fallbackBase}/`, 302);
+        console.error("❌ /api/me proxy error:", err);
+        return NextResponse.json(
+            { detail: "Unable to verify session. Please try again later." },
+            { status: 500 }
+        );
     }
 }
 

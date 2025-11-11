@@ -21,7 +21,7 @@ services:
       - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     networks:
       - profitpath_net
-    # Uncomment for external DB access:
+    # Uncomment to access DB externally (e.g. pgAdmin):
     # ports:
     #   - "5432:5432"
 
@@ -43,10 +43,22 @@ services:
     environment:
       DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg2://postgres:newpassword123@ai_db:5432/ai_trading}
       JWT_SECRET_KEY: ${JWT_SECRET_KEY:-my_super_secret_key_change_me}
+
+      # ✅ CORS: allow all dev + prod frontends
       ALLOWED_ORIGINS: "http://localhost:3000,http://127.0.0.1:3000,http://ai_frontend:3000,https://ai-trading-assistant-steel.vercel.app"
+
+      # ✅ Runtime mode
       ENV: development
+
+      # ✅ Cookies: safe defaults for dev (HTTP)
       COOKIE_SECURE: "False"
-      COOKIE_SAMESITE: "None"
+      COOKIE_SAMESITE: "Lax"
+      COOKIE_DOMAIN: ""  # stays blank locally; set in Railway for prod
+
+    # ✅ ensures backend can resolve localhost from within Docker
+    extra_hosts:
+      - "localhost:host-gateway"
+
     networks:
       - profitpath_net
 
@@ -66,12 +78,19 @@ services:
     environment:
       NEXT_PUBLIC_API_URL_BROWSER: http://localhost:8000
       API_URL_INTERNAL: http://ai_backend:8000
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
       NODE_ENV: development
       PORT: 3000
+
     depends_on:
       - ai_backend
     ports:
       - "3000:3000"
+
+    # ✅ allows localhost resolution inside container
+    extra_hosts:
+      - "localhost:host-gateway"
+
     networks:
       - profitpath_net
 
@@ -88,6 +107,120 @@ networks:
   profitpath_net:
     driver: bridge
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+## ============================================================
+## 🚀 PROFIT PATH — Full Stack (Postgres + FastAPI + Next.js)
+## ============================================================
+#
+#version: "3.9"
+#
+#services:
+#  # ----------------------------------------------------------
+#  # 🐘 PostgreSQL Database
+#  # ----------------------------------------------------------
+#  ai_db:
+#    image: postgres:16
+#    container_name: ai_db
+#    restart: unless-stopped
+#    environment:
+#      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+#      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-newpassword123}
+#      POSTGRES_DB: ${POSTGRES_DB:-ai_trading}
+#    volumes:
+#      - dbdata:/var/lib/postgresql/data
+#      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+#    networks:
+#      - profitpath_net
+#    # Uncomment for external DB access:
+#    # ports:
+#    #   - "5432:5432"
+#
+#  # ----------------------------------------------------------
+#  # ⚙️ FastAPI Backend
+#  # ----------------------------------------------------------
+#  ai_backend:
+#    build:
+#      context: ./backend
+#    container_name: ai_backend
+#    restart: unless-stopped
+#    env_file:
+#      - ./.env
+#      - ./backend/.env
+#    depends_on:
+#      - ai_db
+#    ports:
+#      - "8000:8000"
+#    environment:
+#      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg2://postgres:newpassword123@ai_db:5432/ai_trading}
+#      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-my_super_secret_key_change_me}
+#      ALLOWED_ORIGINS: "http://localhost:3000,http://127.0.0.1:3000,http://ai_frontend:3000,https://ai-trading-assistant-steel.vercel.app"
+#      ENV: development
+#      COOKIE_SECURE: "False"
+#      COOKIE_SAMESITE: "None"
+#    networks:
+#      - profitpath_net
+#
+#  # ----------------------------------------------------------
+#  # 💻 Next.js Frontend
+#  # ----------------------------------------------------------
+#  ai_frontend:
+#    build:
+#      context: ./frontend
+#      args:
+#        NEXT_PUBLIC_API_URL_BROWSER: http://localhost:8000
+#        API_URL_INTERNAL: http://ai_backend:8000
+#    container_name: ai_frontend
+#    restart: unless-stopped
+#    env_file:
+#      - ./.env
+#    environment:
+#      NEXT_PUBLIC_API_URL_BROWSER: http://localhost:8000
+#      API_URL_INTERNAL: http://ai_backend:8000
+#      NODE_ENV: development
+#      PORT: 3000
+#    depends_on:
+#      - ai_backend
+#    ports:
+#      - "3000:3000"
+#    networks:
+#      - profitpath_net
+#
+## ----------------------------------------------------------
+## 💾 Persistent volume for Postgres data
+## ----------------------------------------------------------
+#volumes:
+#  dbdata:
+#
+## ----------------------------------------------------------
+## 🌐 Shared Docker bridge network
+## ----------------------------------------------------------
+#networks:
+#  profitpath_net:
+#    driver: bridge
+#
 
 
 

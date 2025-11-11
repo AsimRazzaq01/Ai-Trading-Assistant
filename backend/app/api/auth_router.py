@@ -14,9 +14,6 @@ from app.core.config import settings
 
 router = APIRouter()
 
-# ============================================================
-# 📦 Schemas
-# ============================================================
 
 class RegisterRequest(BaseModel):
     email: EmailStr
@@ -35,21 +32,13 @@ class LoginRequest(BaseModel):
         return self
 
 
-# ============================================================
-# 🧩 Routes
-# ============================================================
-
 @router.post("/register")
 def register(payload: RegisterRequest, db: Session = Depends(get_db)):
-    """Register a new user."""
     existing = db.query(models.User).filter(models.User.email == payload.email).first()
     if existing:
         raise HTTPException(status_code=400, detail="Email already registered")
 
-    new_user = models.User(
-        email=payload.email,
-        hashed_password=hash_password(payload.password),
-    )
+    new_user = models.User(email=payload.email, hashed_password=hash_password(payload.password))
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
@@ -58,68 +47,41 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db)):
 
 @router.post("/login")
 def login(payload: LoginRequest, response: Response, db: Session = Depends(get_db)):
-    """Login with email or username and issue JWT cookie."""
     q = db.query(models.User)
-    db_user = None
-
-    if payload.email:
-        db_user = q.filter(models.User.email == payload.email).first()
-    elif payload.username:
-        db_user = q.filter(models.User.username == payload.username).first()
+    db_user = q.filter(models.User.email == payload.email).first() if payload.email else q.filter(models.User.username == payload.username).first()
 
     if not db_user or not verify_password(payload.password, db_user.hashed_password):
-        raise HTTPException(status_code=400, detail="Invalid email/username or password")
+        raise HTTPException(status_code=400, detail="Invalid credentials")
 
-    # ✅ Create JWT token
     token = create_access_token({"sub": str(db_user.id)})
-
-    # =========================================================
-    # 🍪 Cookie configuration (env-aware)
-    # =========================================================
-    is_prod = settings.ENV.lower() == "production"
 
     cookie_kwargs = {
         "key": settings.COOKIE_NAME,
         "value": token,
         "httponly": True,
-        "secure": True if is_prod else False,
-        "samesite": "none" if is_prod else "lax",
-        "max_age": 60 * 60 * 24,  # 1 day
+        "samesite": settings.COOKIE_SAMESITE,
+        "secure": settings.COOKIE_SECURE,
+        "max_age": 60 * 60 * 24,
         "path": "/",
     }
 
-    if is_prod and settings.COOKIE_DOMAIN:
-        cookie_kwargs["domain"] = settings.COOKIE_DOMAIN
+    # ✅ Use correct domain in production
+    if settings.ENV == "production":
+        cookie_kwargs["samesite"] = "none"
+        cookie_kwargs["secure"] = True
+        cookie_kwargs["domain"] = settings.COOKIE_DOMAIN or ".vercel.app"
 
     response.set_cookie(**cookie_kwargs)
-
-    return {
-        "message": "Login successful",
-        "access_token": token,
-        "token_type": "bearer",
-    }
-
-
-@router.post("/logout")
-def logout(response: Response):
-    """Clear authentication cookie."""
-    response.delete_cookie(
-        key=settings.COOKIE_NAME,
-        path="/",
-        domain=settings.COOKIE_DOMAIN or None,
-    )
-    return {"message": "Logged out"}
+    return {"message": "Login successful", "access_token": token, "token_type": "bearer"}
 
 
 @router.get("/me")
 def read_me(
         authorization: Optional[str] = Header(None),
         access_token: Optional[str] = Cookie(None),
-        db: Session = Depends(get_db),
+        db: Session = Depends(get_db)
 ):
-    """Return current user based on Bearer or Cookie JWT."""
     token = None
-
     if authorization and authorization.lower().startswith("bearer "):
         token = authorization.split(" ", 1)[1]
     elif access_token:
@@ -129,11 +91,7 @@ def read_me(
         raise HTTPException(status_code=401, detail="Authentication required")
 
     try:
-        payload = jwt.decode(
-            token,
-            settings.JWT_SECRET_KEY,
-            algorithms=[settings.JWT_ALGORITHM],
-        )
+        payload = jwt.decode(token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
         user_id = int(payload.get("sub"))
     except ExpiredSignatureError:
         raise HTTPException(status_code=401, detail="Token expired")
@@ -145,6 +103,7 @@ def read_me(
         raise HTTPException(status_code=401, detail="User not found")
 
     return {"id": user.id, "email": user.email}
+
 
 
 

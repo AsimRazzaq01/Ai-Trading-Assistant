@@ -4,59 +4,53 @@
 
 import { NextRequest, NextResponse } from "next/server";
 
-export const runtime = "nodejs"; // ✅ ensure Node runtime (not Edge)
+export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
     try {
-        // ============================================================
-        // 🌍 Choose backend (local vs prod)
-        // ============================================================
+        const body = await req.json();
+
+        // ✅ Dynamically select backend target
         const backend =
             process.env.API_URL_INTERNAL?.trim() ||
             process.env.NEXT_PUBLIC_API_URL_BROWSER?.trim() ||
-            (process.env.NODE_ENV === "production"
-                ? "https://ai-trading-assistant-backend-production.up.railway.app" // <-- replace with your real Railway backend URL
-                : "http://localhost:8000");
+            "http://localhost:8000";
 
-        // ============================================================
-        // 📦 Forward login request
-        // ============================================================
-        const body = await req.json();
-
-        const res = await fetch(`${backend}/auth/login`, {
+        const response = await fetch(`${backend}/auth/login`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(body),
+            credentials: "include",
         });
 
-        // ============================================================
-        // 🧠 Parse backend response
-        // ============================================================
-        let data: any;
+        let data;
         try {
-            data = await res.json();
+            data = await response.json();
         } catch {
-            data = { message: await res.text() };
+            data = { message: await response.text() };
         }
 
-        // ============================================================
-        // 🍪 Forward Set-Cookie header to browser
-        // ============================================================
-        const out = NextResponse.json(data, { status: res.status });
-        const setCookie = res.headers.get("set-cookie");
-        if (setCookie) {
-            out.headers.set("Set-Cookie", setCookie);
+        if (!response.ok) {
+            return NextResponse.json(
+                { detail: data.detail || "Login failed" },
+                { status: response.status }
+            );
         }
 
-        return out;
-    } catch (error) {
-        console.error("❌ /api/login proxy error:", error);
+        const res = NextResponse.json(data, { status: 200 });
+        const setCookie = response.headers.get("set-cookie");
+        if (setCookie) res.headers.set("set-cookie", setCookie);
+
+        return res;
+    } catch (err) {
+        console.error("❌ Login proxy error:", err);
         return NextResponse.json(
-            { detail: "Login failed. Please try again." },
+            { detail: "Backend connection failed. Is FastAPI running?" },
             { status: 500 }
         );
     }
 }
+
 
 
 
