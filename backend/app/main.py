@@ -1,16 +1,12 @@
 # backend/app/main.py
 
-# ============================================================
-# 🚀 Booting FastAPI container...
-# ============================================================
-
 print("🚀 Booting FastAPI container...")
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.auth_router import router as auth_router
-from app.api.debug_router import router as debug_router
 from app.api.trades_router import router as trades_router
+from app.api.debug_router import router as debug_router
 from app.db.database import Base, engine
 from app.core.config import settings
 
@@ -21,6 +17,7 @@ from app.core.config import settings
 
 proxy_available = False
 try:
+    # ✅ Modern Starlette (v0.38+)
     from starlette.middleware.proxy_headers import ProxyHeadersMiddleware
     proxy_available = True
     print("✅ ProxyHeadersMiddleware import successful (modern Starlette).")
@@ -31,30 +28,30 @@ except ModuleNotFoundError:
         print("✅ ProxyHeadersMiddleware import successful (legacy path).")
     except Exception as e:
         print(f"⚠️ ProxyHeadersMiddleware not available: {e}")
+        proxy_available = False
 
 
 # ============================================================
-# ⚙️ Initialize App
+# ⚙️ Initialize FastAPI
 # ============================================================
 
-app = FastAPI(title="AI Trading Assistant")
+app = FastAPI(title="Profit Path — AI Trading Assistant")
 
 
 # ============================================================
-# 🌐 CORS Configuration (Environment-Aware)
+# 🌐 CORS Configuration (Works for Local + Vercel)
 # ============================================================
 
-# If ALLOWED_ORIGINS is comma-separated, split and strip it
-origins = [o.strip().rstrip("/") for o in settings.ALLOWED_ORIGINS.split(",") if o.strip()]
-
+# Allowed origins — split string into list safely
+origins = [o.strip() for o in settings.ALLOWED_ORIGINS.split(",") if o.strip()]
 print("🌍 Allowed origins:", origins)
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
     allow_credentials=True,  # ✅ Required for cookies
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "Set-Cookie"],
 )
 
 print("✅ CORS middleware configured with credentials support.")
@@ -77,7 +74,6 @@ else:
 
 @app.on_event("startup")
 def on_startup():
-    """Ensure database tables are created on container startup."""
     from sqlalchemy.exc import OperationalError
     import time
 
@@ -106,29 +102,30 @@ app.include_router(debug_router)
 
 
 # ============================================================
-# 🪵 Optional: Log incoming requests (for debugging)
+# 🪵 Log incoming requests (for debugging)
 # ============================================================
 
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
-    origin = request.headers.get("origin")
-    print(f"📥 {request.method} {request.url.path} from Origin: {origin}")
+    print(f"📥 {request.method} {request.url.path} from Origin: {request.headers.get('origin')}")
     response = await call_next(request)
     response.headers["X-Backend-Processed"] = "true"
     return response
 
 
 # ============================================================
-# ❤️ Health Check Endpoints
+# ❤️ Health Endpoints
 # ============================================================
 
 @app.get("/", tags=["Health"])
 def root():
-    return {"status": "ok"}
+    return {"status": "ok", "environment": settings.ENV}
+
 
 @app.get("/healthz", tags=["Health"])
 def healthz():
-    return {"message": "alive"}
+    return {"message": "alive", "cookie_domain": settings.COOKIE_DOMAIN}
+
 
 
 
