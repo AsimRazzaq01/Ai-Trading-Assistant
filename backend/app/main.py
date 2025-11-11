@@ -2,11 +2,6 @@
 
 print("🚀 Booting FastAPI container...")
 
-# ============================================================
-# 🧩 Imports
-# ============================================================
-
-# Import essentials (should never fail)
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.auth_router import router as auth_router
@@ -14,22 +9,19 @@ from app.api.debug_router import router as debug_router
 from app.db.database import Base, engine
 from app.core.config import settings
 
-# Try optional middleware
+# Try ProxyHeadersMiddleware — only available on Starlette >= 0.27.0
 try:
     from starlette.middleware.proxy_headers import ProxyHeadersMiddleware
     proxy_available = True
-except ImportError:
-    print("⚠️ Starlette version missing ProxyHeadersMiddleware — proxy support disabled.")
+    print("✅ ProxyHeadersMiddleware import successful.")
+except Exception as e:
+    print(f"⚠️ ProxyHeadersMiddleware not available: {e}")
     proxy_available = False
-
-# ============================================================
-# 🚀 FastAPI Initialization
-# ============================================================
 
 app = FastAPI(title="AI Trading Assistant")
 
 # ============================================================
-# 🌐 CORS Configuration
+# 🌐 CORS
 # ============================================================
 
 origins = [o.strip().rstrip("/") for o in settings.ALLOWED_ORIGINS.split(",")]
@@ -44,15 +36,15 @@ app.add_middleware(
 )
 
 # ============================================================
-# 🔒 Proxy Headers (for Railway HTTPS)
+# 🔒 HTTPS Proxy Trust
 # ============================================================
 
 if proxy_available:
     app.add_middleware(ProxyHeadersMiddleware, trusted_hosts=["*"])
-    print("✅ ProxyHeadersMiddleware enabled.")
+    print("✅ ProxyHeadersMiddleware enabled (trusting Railway proxy).")
 
 # ============================================================
-# 🗄️ Database Setup
+# 🗄️ Database
 # ============================================================
 
 @app.on_event("startup")
@@ -81,8 +73,8 @@ def root():
 
 @app.get("/healthz", tags=["Health"])
 def healthz():
-    """Used by Railway health checks."""
     return {"message": "alive"}
+
 
 
 
