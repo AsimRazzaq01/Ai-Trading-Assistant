@@ -9,19 +9,34 @@ from app.api.debug_router import router as debug_router
 from app.db.database import Base, engine
 from app.core.config import settings
 
-# Try ProxyHeadersMiddleware — only available on Starlette >= 0.27.0
+# ============================================================
+# 🔒 Proxy / Trusted Host Middleware (Flexible Import)
+# ============================================================
+
+proxy_available = False
 try:
+    # ✅ Modern Starlette import (v0.38+)
     from starlette.middleware.proxy_headers import ProxyHeadersMiddleware
     proxy_available = True
-    print("✅ ProxyHeadersMiddleware import successful.")
-except Exception as e:
-    print(f"⚠️ ProxyHeadersMiddleware not available: {e}")
-    proxy_available = False
+    print("✅ ProxyHeadersMiddleware import successful (modern Starlette).")
+except ModuleNotFoundError:
+    try:
+        # 🧩 Legacy fallback (older Starlette)
+        from starlette.middleware import ProxyHeadersMiddleware
+        proxy_available = True
+        print("✅ ProxyHeadersMiddleware import successful (legacy path).")
+    except Exception as e:
+        print(f"⚠️ ProxyHeadersMiddleware not available: {e}")
+        proxy_available = False
+
+# ============================================================
+# ⚙️ Initialize App
+# ============================================================
 
 app = FastAPI(title="AI Trading Assistant")
 
 # ============================================================
-# 🌐 CORS
+# 🌐 CORS Configuration
 # ============================================================
 
 origins = [o.strip().rstrip("/") for o in settings.ALLOWED_ORIGINS.split(",")]
@@ -36,25 +51,37 @@ app.add_middleware(
 )
 
 # ============================================================
-# 🔒 HTTPS Proxy Trust
+# 🔒 Enable Proxy Middleware (for Railway/Vercel)
 # ============================================================
 
 if proxy_available:
     app.add_middleware(ProxyHeadersMiddleware, trusted_hosts=["*"])
     print("✅ ProxyHeadersMiddleware enabled (trusting Railway proxy).")
+else:
+    print("⚠️ Skipping ProxyHeadersMiddleware (not available).")
 
 # ============================================================
-# 🗄️ Database
+# 🗄️ Database Initialization
 # ============================================================
 
 @app.on_event("startup")
 def on_startup():
-    try:
-        print("🔧 Initializing database tables...")
-        Base.metadata.create_all(bind=engine)
-        print("✅ Database tables are ready.")
-    except Exception as e:
-        print(f"❌ Database init failed: {e}")
+    from sqlalchemy.exc import OperationalError
+    import time
+
+    max_attempts = 10
+    for attempt in range(1, max_attempts + 1):
+        try:
+            print(f"🔧 Initializing database tables... (attempt {attempt}/{max_attempts})")
+            Base.metadata.create_all(bind=engine)
+            print("✅ Database tables are ready.")
+            break
+        except OperationalError as e:
+            print(f"⏳ Database not ready yet (attempt {attempt}): {e}")
+            time.sleep(2)
+        except Exception as e:
+            print(f"❌ Database init failed: {e}")
+            break
 
 # ============================================================
 # 🧩 Routers
@@ -64,7 +91,7 @@ app.include_router(auth_router, prefix="/auth", tags=["Authentication"])
 app.include_router(debug_router)
 
 # ============================================================
-# ❤️ Health Check
+# ❤️ Health Check Endpoints
 # ============================================================
 
 @app.get("/", tags=["Health"])
@@ -74,6 +101,105 @@ def root():
 @app.get("/healthz", tags=["Health"])
 def healthz():
     return {"message": "alive"}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# print("🚀 Booting FastAPI container...")
+#
+# from fastapi import FastAPI
+# from fastapi.middleware.cors import CORSMiddleware
+# from app.api.auth_router import router as auth_router
+# from app.api.debug_router import router as debug_router
+# from app.db.database import Base, engine
+# from app.core.config import settings
+#
+# # Try ProxyHeadersMiddleware — only available on Starlette >= 0.27.0
+# try:
+#     from starlette.middleware.proxy_headers import ProxyHeadersMiddleware
+#     proxy_available = True
+#     print("✅ ProxyHeadersMiddleware import successful.")
+# except Exception as e:
+#     print(f"⚠️ ProxyHeadersMiddleware not available: {e}")
+#     proxy_available = False
+#
+# app = FastAPI(title="AI Trading Assistant")
+#
+# # ============================================================
+# # 🌐 CORS
+# # ============================================================
+#
+# origins = [o.strip().rstrip("/") for o in settings.ALLOWED_ORIGINS.split(",")]
+# print("🌍 Allowed origins:", origins)
+#
+# app.add_middleware(
+#     CORSMiddleware,
+#     allow_origins=origins,
+#     allow_credentials=True,
+#     allow_methods=["*"],
+#     allow_headers=["*"],
+# )
+#
+# # ============================================================
+# # 🔒 HTTPS Proxy Trust
+# # ============================================================
+#
+# if proxy_available:
+#     app.add_middleware(ProxyHeadersMiddleware, trusted_hosts=["*"])
+#     print("✅ ProxyHeadersMiddleware enabled (trusting Railway proxy).")
+#
+# # ============================================================
+# # 🗄️ Database
+# # ============================================================
+#
+# @app.on_event("startup")
+# def on_startup():
+#     try:
+#         print("🔧 Initializing database tables...")
+#         Base.metadata.create_all(bind=engine)
+#         print("✅ Database tables are ready.")
+#     except Exception as e:
+#         print(f"❌ Database init failed: {e}")
+#
+# # ============================================================
+# # 🧩 Routers
+# # ============================================================
+#
+# app.include_router(auth_router, prefix="/auth", tags=["Authentication"])
+# app.include_router(debug_router)
+#
+# # ============================================================
+# # ❤️ Health Check
+# # ============================================================
+#
+# @app.get("/", tags=["Health"])
+# def root():
+#     return {"status": "ok"}
+#
+# @app.get("/healthz", tags=["Health"])
+# def healthz():
+#     return {"message": "alive"}
 
 
 
