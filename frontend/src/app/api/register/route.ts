@@ -2,46 +2,39 @@
 
 import { NextRequest, NextResponse } from "next/server";
 
-export const runtime = "nodejs"; // ✅ Run in Node.js runtime (not Edge)
+export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
     try {
-        // ✅ Dynamically choose correct backend URL
         const backend =
-            process.env.API_URL_INTERNAL?.trim() || // e.g. http://ai_backend:8000 (Docker)
-            process.env.NEXT_PUBLIC_API_URL_BROWSER?.trim() || // e.g. Railway public URL
-            "http://localhost:8000"; // fallback for local dev
+            process.env.API_URL_INTERNAL?.trim() ||
+            process.env.NEXT_PUBLIC_API_URL_BROWSER?.trim() ||
+            "http://localhost:8000";
 
-        // ✅ Parse request body
         const body = await req.json();
 
-        // ✅ Forward registration request to FastAPI backend
         const response = await fetch(`${backend}/auth/register`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(body),
-            credentials: "include", // not strictly needed, but keeps session handling consistent
+            credentials: "include",
         });
 
-        // ✅ Safely parse backend response
-        let data;
-        try {
-            data = await response.json();
-        } catch {
-            data = { message: await response.text() };
-        }
+        const data = await response.json().catch(async () => ({
+            message: await response.text(),
+        }));
 
-        // ✅ Mirror backend response
-        const next = NextResponse.json(data, { status: response.status });
-
-        // ✅ Forward any cookies from backend (rare for register, but consistent)
+        const nextRes = NextResponse.json(data, { status: response.status });
         const setCookie = response.headers.get("set-cookie");
-        if (setCookie) {
-            next.headers.set("set-cookie", setCookie);
-            console.log("🍪 Set-Cookie passed during register:", setCookie.split(";")[0]);
+
+        if (setCookie && setCookie.includes("ai-trading-assistant-steel.vercel.app")) {
+            nextRes.headers.set("set-cookie", setCookie);
+            console.log("🍪 Register passed frontend cookie:", setCookie.split(";")[0]);
+        } else {
+            console.warn("⚠️ No valid Set-Cookie header for frontend domain");
         }
 
-        return next;
+        return nextRes;
     } catch (err) {
         console.error("❌ Register API error:", err);
         return NextResponse.json(
@@ -53,6 +46,76 @@ export async function POST(req: NextRequest) {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// import { NextRequest, NextResponse } from "next/server";
+//
+// export const runtime = "nodejs"; // ✅ Run in Node.js runtime (not Edge)
+//
+// export async function POST(req: NextRequest) {
+//     try {
+//         // ✅ Dynamically choose correct backend URL
+//         const backend =
+//             process.env.API_URL_INTERNAL?.trim() || // e.g. http://ai_backend:8000 (Docker)
+//             process.env.NEXT_PUBLIC_API_URL_BROWSER?.trim() || // e.g. Railway public URL
+//             "http://localhost:8000"; // fallback for local dev
+//
+//         // ✅ Parse request body
+//         const body = await req.json();
+//
+//         // ✅ Forward registration request to FastAPI backend
+//         const response = await fetch(`${backend}/auth/register`, {
+//             method: "POST",
+//             headers: { "Content-Type": "application/json" },
+//             body: JSON.stringify(body),
+//             credentials: "include", // not strictly needed, but keeps session handling consistent
+//         });
+//
+//         // ✅ Safely parse backend response
+//         let data;
+//         try {
+//             data = await response.json();
+//         } catch {
+//             data = { message: await response.text() };
+//         }
+//
+//         // ✅ Mirror backend response
+//         const next = NextResponse.json(data, { status: response.status });
+//
+//         // ✅ Forward any cookies from backend (rare for register, but consistent)
+//         const setCookie = response.headers.get("set-cookie");
+//         if (setCookie) {
+//             next.headers.set("set-cookie", setCookie);
+//             console.log("🍪 Set-Cookie passed during register:", setCookie.split(";")[0]);
+//         }
+//
+//         return next;
+//     } catch (err) {
+//         console.error("❌ Register API error:", err);
+//         return NextResponse.json(
+//             { error: "Registration failed. Backend may be unreachable." },
+//             { status: 500 }
+//         );
+//     }
+// }
+//
+//
+//
 
 
 

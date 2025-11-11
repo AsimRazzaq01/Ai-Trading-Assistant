@@ -2,6 +2,7 @@
 // 💻 frontend/src/app/api/login/route.ts
 // ============================================================
 
+
 import { NextRequest, NextResponse } from "next/server";
 
 export const runtime = "nodejs";
@@ -10,7 +11,7 @@ export async function POST(req: NextRequest) {
     try {
         const body = await req.json();
 
-        // ✅ Dynamically select backend target
+        // ✅ Choose backend (Docker, local, or production)
         const backend =
             process.env.API_URL_INTERNAL?.trim() ||
             process.env.NEXT_PUBLIC_API_URL_BROWSER?.trim() ||
@@ -23,12 +24,9 @@ export async function POST(req: NextRequest) {
             credentials: "include",
         });
 
-        let data;
-        try {
-            data = await response.json();
-        } catch {
-            data = { message: await response.text() };
-        }
+        const data = await response.json().catch(async () => ({
+            message: await response.text(),
+        }));
 
         if (!response.ok) {
             return NextResponse.json(
@@ -37,11 +35,18 @@ export async function POST(req: NextRequest) {
             );
         }
 
-        const res = NextResponse.json(data, { status: 200 });
+        // ✅ Pass through only the frontend-safe cookie
+        const nextRes = NextResponse.json(data, { status: 200 });
         const setCookie = response.headers.get("set-cookie");
-        if (setCookie) res.headers.set("set-cookie", setCookie);
 
-        return res;
+        if (setCookie && setCookie.includes("ai-trading-assistant-steel.vercel.app")) {
+            nextRes.headers.set("set-cookie", setCookie);
+            console.log("🍪 Forwarded cookie for:", setCookie.split(";")[0]);
+        } else {
+            console.warn("⚠️ No valid Set-Cookie header for frontend domain");
+        }
+
+        return nextRes;
     } catch (err) {
         console.error("❌ Login proxy error:", err);
         return NextResponse.json(
@@ -50,6 +55,71 @@ export async function POST(req: NextRequest) {
         );
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// import { NextRequest, NextResponse } from "next/server";
+//
+// export const runtime = "nodejs";
+//
+// export async function POST(req: NextRequest) {
+//     try {
+//         const body = await req.json();
+//
+//         // ✅ Dynamically select backend target
+//         const backend =
+//             process.env.API_URL_INTERNAL?.trim() ||
+//             process.env.NEXT_PUBLIC_API_URL_BROWSER?.trim() ||
+//             "http://localhost:8000";
+//
+//         const response = await fetch(`${backend}/auth/login`, {
+//             method: "POST",
+//             headers: { "Content-Type": "application/json" },
+//             body: JSON.stringify(body),
+//             credentials: "include",
+//         });
+//
+//         let data;
+//         try {
+//             data = await response.json();
+//         } catch {
+//             data = { message: await response.text() };
+//         }
+//
+//         if (!response.ok) {
+//             return NextResponse.json(
+//                 { detail: data.detail || "Login failed" },
+//                 { status: response.status }
+//             );
+//         }
+//
+//         const res = NextResponse.json(data, { status: 200 });
+//         const setCookie = response.headers.get("set-cookie");
+//         if (setCookie) res.headers.set("set-cookie", setCookie);
+//
+//         return res;
+//     } catch (err) {
+//         console.error("❌ Login proxy error:", err);
+//         return NextResponse.json(
+//             { detail: "Backend connection failed. Is FastAPI running?" },
+//             { status: 500 }
+//         );
+//     }
+// }
 
 
 
