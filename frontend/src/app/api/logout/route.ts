@@ -1,40 +1,123 @@
-// frontend/src/app/api/logout/route.ts
+// ============================================================
+// 🚪 frontend/src/app/api/logout/route.ts
+// ============================================================
 
 import { NextRequest, NextResponse } from "next/server";
 
-export const runtime = "nodejs";
+export const runtime = "nodejs"; // ✅ Required for proper cookie handling
 
-// ✅ Works in both localhost and production
-export async function GET(req: NextRequest) {
+export async function POST(req: NextRequest) {
     try {
+        // ✅ Dynamically pick backend target
         const backend =
             process.env.API_URL_INTERNAL?.trim() ||
             process.env.NEXT_PUBLIC_API_URL_BROWSER?.trim() ||
             "http://localhost:8000";
 
-        const response = await fetch(`${backend}/auth/me`, {
-            method: "GET",
-            credentials: "include", // ✅ browser will send cookie automatically
-            cache: "no-store",
+        // ✅ Call FastAPI /auth/logout (clears cookie on backend)
+        const response = await fetch(`${backend}/auth/logout`, {
+            method: "POST",
+            credentials: "include",
         });
 
-        if (!response.ok) {
-            return NextResponse.json(
-                { detail: "Session expired. Please log in again." },
-                { status: 401 }
+        // ✅ Determine base URL for redirect (frontend)
+        const baseUrl =
+            process.env.NEXT_PUBLIC_APP_URL?.trim() ||
+            (process.env.VERCEL_URL
+                ? `https://${process.env.VERCEL_URL}`
+                : "http://localhost:3000");
+
+        const redirect = NextResponse.redirect(`${baseUrl}/`, 302);
+
+        // ✅ Forward only valid frontend-domain cookie deletion
+        const setCookie = response.headers.get("set-cookie");
+        if (
+            setCookie &&
+            setCookie.includes("ai-trading-assistant-steel.vercel.app")
+        ) {
+            redirect.headers.set("set-cookie", setCookie);
+            console.log("🍪 Logout cleared cookie:", setCookie.split(";")[0]);
+        } else {
+            // ✅ Manual fallback — forcibly clear cookie for frontend domain
+            redirect.headers.append(
+                "set-cookie",
+                [
+                    `access_token=; Path=/; Domain=ai-trading-assistant-steel.vercel.app; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly; Secure; SameSite=None`,
+                ].join("")
             );
+            console.warn("⚠️ No valid Set-Cookie header; applied manual cookie clear");
         }
 
-        const data = await response.json();
-        return NextResponse.json(data, { status: response.status });
+        return redirect;
     } catch (err) {
-        console.error("❌ /api/me proxy error:", err);
-        return NextResponse.json(
-            { detail: "Unable to verify session. Please try again later." },
-            { status: 500 }
-        );
+        console.error("❌ Logout proxy error:", err);
+
+        // ✅ Safe fallback redirect (even if backend unreachable)
+        const fallbackBase =
+            process.env.NEXT_PUBLIC_APP_URL?.trim() ||
+            (process.env.VERCEL_URL
+                ? `https://${process.env.VERCEL_URL}`
+                : "http://localhost:3000");
+
+        return NextResponse.redirect(`${fallbackBase}/`, 302);
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// import { NextRequest, NextResponse } from "next/server";
+//
+// export const runtime = "nodejs";
+//
+// // ✅ Works in both localhost and production
+// export async function GET(req: NextRequest) {
+//     try {
+//         const backend =
+//             process.env.API_URL_INTERNAL?.trim() ||
+//             process.env.NEXT_PUBLIC_API_URL_BROWSER?.trim() ||
+//             "http://localhost:8000";
+//
+//         const response = await fetch(`${backend}/auth/me`, {
+//             method: "GET",
+//             credentials: "include", // ✅ browser will send cookie automatically
+//             cache: "no-store",
+//         });
+//
+//         if (!response.ok) {
+//             return NextResponse.json(
+//                 { detail: "Session expired. Please log in again." },
+//                 { status: 401 }
+//             );
+//         }
+//
+//         const data = await response.json();
+//         return NextResponse.json(data, { status: response.status });
+//     } catch (err) {
+//         console.error("❌ /api/me proxy error:", err);
+//         return NextResponse.json(
+//             { detail: "Unable to verify session. Please try again later." },
+//             { status: 500 }
+//         );
+//     }
+// }
 
 
 
