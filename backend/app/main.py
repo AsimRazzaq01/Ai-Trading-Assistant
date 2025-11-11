@@ -10,6 +10,7 @@ from app.api.debug_router import router as debug_router
 from app.db.database import Base, engine
 from app.core.config import settings
 
+print("🍪 COOKIE_DOMAIN loaded as:", settings.COOKIE_DOMAIN)
 
 # ============================================================
 # 🔒 Proxy / Trusted Host Middleware (Flexible Import)
