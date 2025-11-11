@@ -9,15 +9,12 @@ export default function DashboardPage() {
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        const backend =
-            process.env.NEXT_PUBLIC_API_URL_BROWSER ||
-            "http://localhost:8000";
-
         (async () => {
             try {
-                const res = await fetch(`${backend}/auth/me`, {
+                // ✅ Always go through Next.js proxy to keep cookies same-site
+                const res = await fetch("/api/me", {
                     method: "GET",
-                    credentials: "include", // ✅ send cookie to backend
+                    credentials: "include",
                     cache: "no-store",
                 });
 
@@ -38,10 +35,7 @@ export default function DashboardPage() {
     if (error) {
         return (
             <div className="p-6 text-center">
-                <a
-                    href="/login"
-                    className="text-blue-600 hover:underline text-lg"
-                >
+                <a href="/login" className="text-blue-600 hover:underline text-lg">
                     {error}
                 </a>
             </div>
@@ -49,9 +43,7 @@ export default function DashboardPage() {
     }
 
     if (!user) {
-        return (
-            <div className="p-6 text-center text-gray-600">Loading...</div>
-        );
+        return <div className="p-6 text-center text-gray-600">Loading...</div>;
     }
 
     return (
@@ -61,9 +53,7 @@ export default function DashboardPage() {
             </h1>
             <p className="text-gray-600 mt-2">
                 Logged in as:{" "}
-                <span className="font-semibold text-gray-800">
-          {user.email}
-        </span>
+                <span className="font-semibold text-gray-800">{user.email}</span>
             </p>
             <p className="text-gray-500 mt-1 text-sm">
                 Backend connection verified ✅
@@ -72,6 +62,100 @@ export default function DashboardPage() {
     );
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// "use client";
+//
+// import React, { useEffect, useState } from "react";
+//
+// export default function DashboardPage() {
+//     const [user, setUser] = useState<any>(null);
+//     const [error, setError] = useState<string | null>(null);
+//
+//     useEffect(() => {
+//         const backend =
+//             process.env.NEXT_PUBLIC_API_URL_BROWSER ||
+//             "http://localhost:8000";
+//
+//         (async () => {
+//             try {
+//                 const res = await fetch(`${backend}/auth/me`, {
+//                     method: "GET",
+//                     credentials: "include", // ✅ send cookie to backend
+//                     cache: "no-store",
+//                 });
+//
+//                 if (!res.ok) {
+//                     setError("Session expired. Go to Login →");
+//                     return;
+//                 }
+//
+//                 const data = await res.json();
+//                 setUser(data);
+//             } catch (err) {
+//                 console.error("❌ Dashboard fetch error:", err);
+//                 setError("Server error. Please try again later.");
+//             }
+//         })();
+//     }, []);
+//
+//     if (error) {
+//         return (
+//             <div className="p-6 text-center">
+//                 <a
+//                     href="/login"
+//                     className="text-blue-600 hover:underline text-lg"
+//                 >
+//                     {error}
+//                 </a>
+//             </div>
+//         );
+//     }
+//
+//     if (!user) {
+//         return (
+//             <div className="p-6 text-center text-gray-600">Loading...</div>
+//         );
+//     }
+//
+//     return (
+//         <div className="p-6 text-center">
+//             <h1 className="text-3xl font-bold text-blue-600">
+//                 Welcome to Profit Path 🚀
+//             </h1>
+//             <p className="text-gray-600 mt-2">
+//                 Logged in as:{" "}
+//                 <span className="font-semibold text-gray-800">
+//           {user.email}
+//         </span>
+//             </p>
+//             <p className="text-gray-500 mt-1 text-sm">
+//                 Backend connection verified ✅
+//             </p>
+//         </div>
+//     );
+// }
+//
 
 
 
