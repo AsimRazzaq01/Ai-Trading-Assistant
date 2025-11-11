@@ -1,13 +1,19 @@
 # backend/app/main.py
 
+# ============================================================
+# 🚀 Booting FastAPI container...
+# ============================================================
+
 print("🚀 Booting FastAPI container...")
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.auth_router import router as auth_router
 from app.api.debug_router import router as debug_router
+from app.api.trades_router import router as trades_router
 from app.db.database import Base, engine
 from app.core.config import settings
+
 
 # ============================================================
 # 🔒 Proxy / Trusted Host Middleware (Flexible Import)
@@ -15,19 +21,17 @@ from app.core.config import settings
 
 proxy_available = False
 try:
-    # ✅ Modern Starlette import (v0.38+)
     from starlette.middleware.proxy_headers import ProxyHeadersMiddleware
     proxy_available = True
     print("✅ ProxyHeadersMiddleware import successful (modern Starlette).")
 except ModuleNotFoundError:
     try:
-        # 🧩 Legacy fallback (older Starlette)
         from starlette.middleware import ProxyHeadersMiddleware
         proxy_available = True
         print("✅ ProxyHeadersMiddleware import successful (legacy path).")
     except Exception as e:
         print(f"⚠️ ProxyHeadersMiddleware not available: {e}")
-        proxy_available = False
+
 
 # ============================================================
 # ⚙️ Initialize App
@@ -35,20 +39,26 @@ except ModuleNotFoundError:
 
 app = FastAPI(title="AI Trading Assistant")
 
+
 # ============================================================
-# 🌐 CORS Configuration
+# 🌐 CORS Configuration (Environment-Aware)
 # ============================================================
 
-origins = [o.strip().rstrip("/") for o in settings.ALLOWED_ORIGINS.split(",")]
+# If ALLOWED_ORIGINS is comma-separated, split and strip it
+origins = [o.strip().rstrip("/") for o in settings.ALLOWED_ORIGINS.split(",") if o.strip()]
+
 print("🌍 Allowed origins:", origins)
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
-    allow_credentials=True,
+    allow_credentials=True,  # ✅ Required for cookies
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+print("✅ CORS middleware configured with credentials support.")
+
 
 # ============================================================
 # 🔒 Enable Proxy Middleware (for Railway/Vercel)
@@ -60,12 +70,14 @@ if proxy_available:
 else:
     print("⚠️ Skipping ProxyHeadersMiddleware (not available).")
 
+
 # ============================================================
 # 🗄️ Database Initialization
 # ============================================================
 
 @app.on_event("startup")
 def on_startup():
+    """Ensure database tables are created on container startup."""
     from sqlalchemy.exc import OperationalError
     import time
 
@@ -83,12 +95,28 @@ def on_startup():
             print(f"❌ Database init failed: {e}")
             break
 
+
 # ============================================================
 # 🧩 Routers
 # ============================================================
 
 app.include_router(auth_router, prefix="/auth", tags=["Authentication"])
+app.include_router(trades_router, prefix="/trades", tags=["Trades"])
 app.include_router(debug_router)
+
+
+# ============================================================
+# 🪵 Optional: Log incoming requests (for debugging)
+# ============================================================
+
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    origin = request.headers.get("origin")
+    print(f"📥 {request.method} {request.url.path} from Origin: {origin}")
+    response = await call_next(request)
+    response.headers["X-Backend-Processed"] = "true"
+    return response
+
 
 # ============================================================
 # ❤️ Health Check Endpoints
@@ -101,6 +129,7 @@ def root():
 @app.get("/healthz", tags=["Health"])
 def healthz():
     return {"message": "alive"}
+
 
 
 

@@ -1,55 +1,63 @@
-// frontend/src/app/api/login/route.ts
+// ============================================================
+// 💻 frontend/src/app/api/login/route.ts
+// ============================================================
 
 import { NextRequest, NextResponse } from "next/server";
 
-export const runtime = "nodejs";
+export const runtime = "nodejs"; // ✅ ensure Node runtime (not Edge)
 
 export async function POST(req: NextRequest) {
     try {
-        // ✅ Dynamically resolve backend URL
+        // ============================================================
+        // 🌍 Choose backend (local vs prod)
+        // ============================================================
         const backend =
-            process.env.API_URL_INTERNAL?.trim() || // e.g., http://ai_backend:8000 (Docker)
-            process.env.NEXT_PUBLIC_API_URL_BROWSER?.trim() || // production (Vercel env)
-            "http://localhost:8000"; // fallback for local dev
+            process.env.API_URL_INTERNAL?.trim() ||
+            process.env.NEXT_PUBLIC_API_URL_BROWSER?.trim() ||
+            (process.env.NODE_ENV === "production"
+                ? "https://ai-trading-assistant-backend-production.up.railway.app" // <-- replace with your real Railway backend URL
+                : "http://localhost:8000");
 
+        // ============================================================
+        // 📦 Forward login request
+        // ============================================================
         const body = await req.json();
 
-        // ✅ Forward request to FastAPI backend
-        const response = await fetch(`${backend}/auth/login`, {
+        const res = await fetch(`${backend}/auth/login`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(body),
-            credentials: "include", // ensures backend cookie travels through proxy
         });
 
-        let data;
+        // ============================================================
+        // 🧠 Parse backend response
+        // ============================================================
+        let data: any;
         try {
-            data = await response.json();
+            data = await res.json();
         } catch {
-            data = { message: await response.text() };
+            data = { message: await res.text() };
         }
 
-        // ✅ Mirror backend response
-        const next = NextResponse.json(data, { status: response.status });
-
-        // ✅ Pass Set-Cookie header from backend → client
-        const setCookie = response.headers.get("set-cookie");
+        // ============================================================
+        // 🍪 Forward Set-Cookie header to browser
+        // ============================================================
+        const out = NextResponse.json(data, { status: res.status });
+        const setCookie = res.headers.get("set-cookie");
         if (setCookie) {
-            next.headers.set("set-cookie", setCookie);
-            console.log("🍪 Set-Cookie passed to client:", setCookie.split(";")[0]);
-        } else {
-            console.warn("⚠️ No Set-Cookie header received from backend");
+            out.headers.set("Set-Cookie", setCookie);
         }
 
-        return next;
-    } catch (err) {
-        console.error("❌ Login API error:", err);
+        return out;
+    } catch (error) {
+        console.error("❌ /api/login proxy error:", error);
         return NextResponse.json(
-            { error: "Login failed. Backend may be unreachable." },
+            { detail: "Login failed. Please try again." },
             { status: 500 }
         );
     }
 }
+
 
 
 

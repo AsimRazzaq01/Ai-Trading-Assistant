@@ -1,50 +1,67 @@
-// frontend/src/app/api/me/route.ts
+// ============================================================
+// 💻 frontend/src/app/api/me/route.ts
+// ============================================================
 
 import { NextRequest, NextResponse } from "next/server";
 
-export const runtime = "nodejs"; // ✅ Needed for cookies to work properly
+export const runtime = "nodejs"; // ✅ ensures Node runtime (not Edge)
 
 export async function GET(req: NextRequest) {
     try {
-        // ✅ Dynamically pick backend
+        // ============================================================
+        // 🌍 Dynamically pick backend (local vs prod)
+        // ============================================================
         const backend =
             process.env.API_URL_INTERNAL?.trim() ||
             process.env.NEXT_PUBLIC_API_URL_BROWSER?.trim() ||
-            "http://localhost:8000";
+            (process.env.NODE_ENV === "production"
+                ? "https://ai-trading-assistant-backend-production.up.railway.app" // ✅ replace with your Railway backend URL
+                : "http://localhost:8000");
 
-        // ✅ Grab both cookie + Authorization header (supports both login methods)
+        // ============================================================
+        // 🍪 Forward cookies and headers to backend
+        // ============================================================
         const cookie = req.headers.get("cookie") ?? "";
         const authHeader = req.headers.get("authorization");
 
-        // ✅ Call FastAPI backend /auth/me
-        const response = await fetch(`${backend}/auth/me`, {
+        const res = await fetch(`${backend}/auth/me`, {
             method: "GET",
             headers: {
                 ...(authHeader ? { Authorization: authHeader } : {}),
                 ...(cookie ? { Cookie: cookie } : {}),
+                "Content-Type": "application/json",
             },
-            credentials: "include",
+            credentials: "include", // ✅ allows backend to read HttpOnly cookie
             cache: "no-store",
         });
 
-        // ✅ Attempt to parse backend response safely
-        let data;
+        // ============================================================
+        // 🧠 Parse backend response safely
+        // ============================================================
+        let data: any;
         try {
-            data = await response.json();
+            data = await res.json();
         } catch {
-            data = { message: await response.text() };
+            data = { message: await res.text() };
         }
 
-        // ✅ If backend says unauthorized, normalize the message
-        if (response.status === 401) {
-            console.warn("⚠️ Unauthorized from backend: clearing session");
-            return NextResponse.json(
+        // ============================================================
+        // ❌ Normalize unauthorized responses
+        // ============================================================
+        if (res.status === 401) {
+            console.warn("⚠️ Unauthorized: clearing local session cookie");
+            const out = NextResponse.json(
                 { detail: "Session expired. Please log in again." },
                 { status: 401 }
             );
+            out.cookies.delete("access_token"); // clears client-side cookie (just in case)
+            return out;
         }
 
-        return NextResponse.json(data, { status: response.status });
+        // ============================================================
+        // ✅ Forward backend data to frontend
+        // ============================================================
+        return NextResponse.json(data, { status: res.status });
     } catch (err) {
         console.error("❌ /api/me proxy error:", err);
         return NextResponse.json(
@@ -53,6 +70,9 @@ export async function GET(req: NextRequest) {
         );
     }
 }
+
+
+
 
 
 
