@@ -69,6 +69,12 @@ export default async function ProtectedLayout({
                             <a className="px-3 py-1 text-sm text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded transition" href="/dashboard">
                                 Dashboard
                             </a>
+                            <a className="px-3 py-1 text-sm text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded transition" href="/my-assets">
+                                My Assets
+                            </a>
+                            <a className="px-3 py-1 text-sm text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded transition" href="/watchlist">
+                                Watchlist
+                            </a>
                             <a className="px-3 py-1 text-sm text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded transition" href="/deep-research">
                                 Deep Research
                             </a>
@@ -77,9 +83,6 @@ export default async function ProtectedLayout({
                             </a>
                             <a className="px-3 py-1 text-sm text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded transition" href="/pattern-trends">
                                 Pattern Trends
-                            </a>
-                            <a className="px-3 py-1 text-sm text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded transition" href="/watchlist">
-                                Watchlist
                             </a>
                             <a className="px-3 py-1 text-sm text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded transition" href="/risk-management">
                                 Risk Management

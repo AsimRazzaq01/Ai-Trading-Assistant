@@ -2,9 +2,10 @@
 # 📁 backend/app/api/debug_router.py
 # ============================================================
 
+from typing import Literal, cast
 from fastapi import APIRouter, Request, Cookie, Header, Response, Depends
 from app.core.config import settings
-from jose import jwt, JWTError, ExpiredSignatureError
+from jose import jwt, JWTError, ExpiredSignatureError  # type: ignore
 
 router = APIRouter(prefix="/debug", tags=["Debug"])
 
@@ -48,12 +49,13 @@ def decode_cookie(access_token: str | None = Cookie(default=None)):
 @router.get("/set-test-cookie")
 def set_test_cookie(response: Response):
     """Force-set a test cookie so we can check SameSite and Secure flags."""
+    samesite_value = cast(Literal["lax", "strict", "none"], settings.COOKIE_SAMESITE or "lax")
     response.set_cookie(
         key="debug_cookie",
         value="test123",
         httponly=True,
         secure=settings.COOKIE_SECURE,
-        samesite=settings.COOKIE_SAMESITE,
+        samesite=samesite_value,
         path="/",
     )
     return {"message": "Test cookie set"}

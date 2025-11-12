@@ -1,5 +1,6 @@
 import "../globals.css";
 import type { Metadata } from "next";
+import { ThemeProvider } from "@/context/ThemeContext";
 
 export const metadata: Metadata = {
     title: "AI Trading Assistant",
@@ -13,7 +14,11 @@ export default function RootLayout({
 }) {
     return (
         <html lang="en">
-        <body className="bg-gray-50 text-gray-900">{children}</body>
+        <body className="bg-gray-50 text-gray-900">
+            <ThemeProvider>
+                {children}
+            </ThemeProvider>
+        </body>
         </html>
     );
 }
