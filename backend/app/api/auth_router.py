@@ -55,23 +55,34 @@ def login(payload: LoginRequest, response: Response, db: Session = Depends(get_d
 
     token = create_access_token({"sub": str(db_user.id)})
 
-    cookie_kwargs = {
-        "key": settings.COOKIE_NAME,
-        "value": token,
-        "httponly": True,
-        "samesite": settings.COOKIE_SAMESITE,
-        "secure": settings.COOKIE_SECURE,
-        "max_age": 60 * 60 * 24,
-        "path": "/",
-    }
-
-    # ✅ Use correct domain in production
-    if settings.ENV == "production":
-        cookie_kwargs["samesite"] = "none"
-        cookie_kwargs["secure"] = True
-        cookie_kwargs["domain"] = settings.COOKIE_DOMAIN or ".vercel.app"
-
-    response.set_cookie(**cookie_kwargs)
+    # ✅ Determine if we're in production (cross-origin setup)
+    is_production = settings.ENV.lower() == "production"
+    
+    # ✅ Cookie settings for cross-origin (Vercel frontend → Railway backend)
+    if is_production:
+        # For cross-origin cookies, we need SameSite=None and Secure=True
+        # DO NOT set domain for cross-origin cookies (browser handles it)
+        response.set_cookie(
+            key=settings.COOKIE_NAME,
+            value=token,
+            httponly=True,
+            samesite="none",
+            secure=True,
+            max_age=60 * 60 * 24,
+            path="/",
+            domain=settings.COOKIE_DOMAIN if settings.COOKIE_DOMAIN else None,
+        )
+    else:
+        # Local development: SameSite=Lax, Secure=False, no domain
+        response.set_cookie(
+            key=settings.COOKIE_NAME,
+            value=token,
+            httponly=True,
+            samesite=(settings.COOKIE_SAMESITE or "lax").lower(),
+            secure=bool(settings.COOKIE_SECURE),
+            max_age=60 * 60 * 24,
+            path="/",
+        )
     return {"message": "Login successful", "access_token": token, "token_type": "bearer"}
 
 

@@ -36,16 +36,15 @@ export async function GET(req: NextRequest) {
             data = { message: await response.text() };
         }
 
-        // ✅ Pass through backend cookies *only if valid for frontend domain*
+        // ✅ Forward cookies in all environments
         const nextRes = NextResponse.json(data, { status: response.status });
         const setCookie = response.headers.get("set-cookie");
 
-        if (
-            setCookie &&
-            setCookie.includes("ai-trading-assistant-steel.vercel.app")
-        ) {
+        if (setCookie) {
+            // ✅ Forward cookie in all environments (local and production)
+            // The backend sets the correct domain/secure flags based on environment
             nextRes.headers.set("set-cookie", setCookie);
-            console.log("🍪 Forwarded valid cookie:", setCookie.split(";")[0]);
+            console.log("🍪 Forwarded cookie:", setCookie.split(";")[0]);
         }
 
         return nextRes;
