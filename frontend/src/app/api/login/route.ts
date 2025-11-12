@@ -35,15 +35,17 @@ export async function POST(req: NextRequest) {
             );
         }
 
-        // ✅ Pass through only the frontend-safe cookie
+        // ✅ Forward cookies in all environments
         const nextRes = NextResponse.json(data, { status: 200 });
         const setCookie = response.headers.get("set-cookie");
 
-        if (setCookie && setCookie.includes("ai-trading-assistant-steel.vercel.app")) {
+        if (setCookie) {
+            // ✅ Forward cookie in all environments (local and production)
+            // The backend sets the correct domain/secure flags based on environment
             nextRes.headers.set("set-cookie", setCookie);
-            console.log("🍪 Forwarded cookie for:", setCookie.split(";")[0]);
+            console.log("🍪 Forwarded cookie:", setCookie.split(";")[0]);
         } else {
-            console.warn("⚠️ No valid Set-Cookie header for frontend domain");
+            console.warn("⚠️ No Set-Cookie header from backend");
         }
 
         return nextRes;

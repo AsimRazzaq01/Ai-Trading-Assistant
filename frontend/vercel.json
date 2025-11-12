@@ -1,7 +1,7 @@
 {
   "rewrites": [
     {
-      "source": "/api/:path*",
+      "source": "/backend-api/:path*",
       "destination": "https://profitpath-api-production.up.railway.app/:path*"
     }
   ]

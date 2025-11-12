@@ -27,11 +27,10 @@ export async function POST(req: NextRequest) {
         const nextRes = NextResponse.json(data, { status: response.status });
         const setCookie = response.headers.get("set-cookie");
 
-        if (setCookie && setCookie.includes("ai-trading-assistant-steel.vercel.app")) {
+        if (setCookie) {
+            // ✅ Forward cookie in all environments
             nextRes.headers.set("set-cookie", setCookie);
-            console.log("🍪 Register passed frontend cookie:", setCookie.split(";")[0]);
-        } else {
-            console.warn("⚠️ No valid Set-Cookie header for frontend domain");
+            console.log("🍪 Forwarded cookie:", setCookie.split(";")[0]);
         }
 
         return nextRes;
