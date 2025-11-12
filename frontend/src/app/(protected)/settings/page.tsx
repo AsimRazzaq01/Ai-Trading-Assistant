@@ -5,7 +5,6 @@ import React from "react";
 
 export default async function SettingsPage() {
     try {
-        // ✅ Use Next.js API proxy route which handles cookie forwarding properly
         const cookieStore = await cookies();
         const token = cookieStore.get("access_token")?.value;
 
@@ -18,23 +17,17 @@ export default async function SettingsPage() {
             );
         }
 
-        // ✅ Construct the API URL for internal fetch
-        let apiUrl: string;
-        
-        if (process.env.VERCEL_URL) {
-            // Production on Vercel
-            apiUrl = `https://${process.env.VERCEL_URL}/api/me`;
-        } else if (process.env.NEXT_PUBLIC_APP_URL) {
-            // Custom app URL configured
-            apiUrl = `${process.env.NEXT_PUBLIC_APP_URL}/api/me`;
-        } else {
-            // Local development
-            apiUrl = "http://localhost:3000/api/me";
-        }
+        // ✅ Determine backend URL: use internal URL if available, otherwise public URL
+        const backend =
+            process.env.API_URL_INTERNAL?.trim() ||
+            process.env.NEXT_PUBLIC_API_URL_BROWSER?.trim() ||
+            "http://localhost:8000";
 
-        const res = await fetch(apiUrl, {
+        // ✅ Call backend directly from server component
+        const res = await fetch(`${backend}/auth/me`, {
             headers: {
-                Cookie: `access_token=${token}`,
+                Authorization: `Bearer ${token}`,
+                Cookie: `access_token=${token}`, // Also send as cookie for backend compatibility
             },
             cache: "no-store",
         });

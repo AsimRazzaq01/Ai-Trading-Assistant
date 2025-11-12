@@ -6,31 +6,24 @@ export const dynamic = "force-dynamic";
 
 async function fetchMe() {
     try {
-        // ✅ Use Next.js API proxy route which handles cookie forwarding properly
         const cookieStore = await cookies();
         const token = cookieStore.get("access_token")?.value;
 
         if (!token) return null;
 
-        // ✅ Construct the API URL for internal fetch
-        // In Next.js server components, we need to use absolute URLs
-        let apiUrl: string;
-        
-        if (process.env.VERCEL_URL) {
-            // Production on Vercel
-            apiUrl = `https://${process.env.VERCEL_URL}/api/me`;
-        } else if (process.env.NEXT_PUBLIC_APP_URL) {
-            // Custom app URL configured
-            apiUrl = `${process.env.NEXT_PUBLIC_APP_URL}/api/me`;
-        } else {
-            // Local development
-            apiUrl = "http://localhost:3000/api/me";
-        }
-        
-        // ✅ Forward the cookie to the API route
-        const res = await fetch(apiUrl, {
+        // ✅ Determine backend URL: use internal URL if available, otherwise public URL
+        // In Vercel production, API_URL_INTERNAL should be set to Railway backend URL
+        // In local dev, NEXT_PUBLIC_API_URL_BROWSER should be set to localhost:8000
+        const backend =
+            process.env.API_URL_INTERNAL?.trim() ||
+            process.env.NEXT_PUBLIC_API_URL_BROWSER?.trim() ||
+            "http://localhost:8000";
+
+        // ✅ Call backend directly from server component (more reliable than internal API route)
+        const res = await fetch(`${backend}/auth/me`, {
             headers: {
-                Cookie: `access_token=${token}`,
+                Authorization: `Bearer ${token}`,
+                Cookie: `access_token=${token}`, // Also send as cookie for backend compatibility
             },
             cache: "no-store",
         });
