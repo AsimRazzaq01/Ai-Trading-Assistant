@@ -1,0 +1,13 @@
+{
+  "include": ["app"],
+  "exclude": ["**/__pycache__", "**/node_modules"],
+  "reportMissingTypeStubs": false,
+  "reportImportCycles": false,
+  "reportUnusedImport": false,
+  "reportUnusedVariable": false,
+  "reportGeneralTypeIssues": false,
+  "reportMissingImports": false,
+  "pythonVersion": "3.12",
+  "typeCheckingMode": "basic"
+}
+

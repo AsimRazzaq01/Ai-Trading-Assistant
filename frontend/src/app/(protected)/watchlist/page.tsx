@@ -1,135 +1,247 @@
-// frontend/src/app/(protected)/watchlist/page.tsx
+"use client";
 
-import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useTheme } from "@/context/ThemeContext";
+import { fetchStockSummary, StockSummary } from "@/lib/fetchStockSummary";
 
-export default async function WatchlistPage() {
-    try {
-        const cookieStore = await cookies();
-        const token = cookieStore.get("access_token")?.value;
+export default function WatchlistPage() {
+  const { theme } = useTheme();
+  const [tickers, setTickers] = useState<string[]>([]);
+  const [stockData, setStockData] = useState<StockSummary[]>([]);
+  const [newTicker, setNewTicker] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState("");
 
-        if (!token) {
-            redirect("/login");
-        }
+  // ✅ Use your Polygon key from .env
+  const polygonKey = process.env.NEXT_PUBLIC_POLYGON_API_KEY || "";
 
-        // ✅ Determine backend URL: use internal URL if available, otherwise public URL
-        const backend =
-            process.env.API_URL_INTERNAL?.trim() ||
-            process.env.NEXT_PUBLIC_API_URL_BROWSER?.trim() ||
-            "http://localhost:8000";
-
-        // ✅ Call backend directly from server component
-        const res = await fetch(`${backend}/auth/me`, {
-            headers: {
-                Authorization: `Bearer ${token}`,
-                Cookie: `access_token=${token}`,
-            },
-            cache: "no-store",
-        });
-
-        if (!res.ok) {
-            console.error(`❌ Backend returned ${res.status}`);
-            return (
-                <div className="p-6 text-center">
-                    <h1 className="text-2xl font-bold text-red-600">Server Error</h1>
-                    <p className="text-gray-600 mt-2">
-                        Could not load user data. Please try again later.
-                    </p>
-                </div>
-            );
-        }
-
-        const user = await res.json();
-
-        return (
-            <div className="p-6 max-w-7xl mx-auto">
-                <h1 className="text-3xl font-bold text-blue-600 mb-6">
-                    My Watchlist 👀
-                </h1>
-                
-                <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-                    <div className="flex items-center justify-between mb-4">
-                        <h2 className="text-xl font-semibold text-gray-800">
-                            Tracked Securities
-                        </h2>
-                        <button className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition">
-                            + Add Symbol
-                        </button>
-                    </div>
-                    
-                    <p className="text-gray-600 mb-6">
-                        Monitor your favorite stocks, cryptocurrencies, and other securities 
-                        in one convenient location.
-                    </p>
-
-                    <div className="overflow-x-auto">
-                        <table className="w-full border-collapse">
-                            <thead>
-                                <tr className="bg-gray-100">
-                                    <th className="border p-3 text-left text-sm font-semibold text-gray-700">Symbol</th>
-                                    <th className="border p-3 text-left text-sm font-semibold text-gray-700">Name</th>
-                                    <th className="border p-3 text-right text-sm font-semibold text-gray-700">Price</th>
-                                    <th className="border p-3 text-right text-sm font-semibold text-gray-700">Change</th>
-                                    <th className="border p-3 text-center text-sm font-semibold text-gray-700">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr className="hover:bg-gray-50">
-                                    <td className="border p-3 font-mono font-semibold">AAPL</td>
-                                    <td className="border p-3 text-gray-700">Apple Inc.</td>
-                                    <td className="border p-3 text-right font-semibold">$175.43</td>
-                                    <td className="border p-3 text-right text-green-600">+2.34%</td>
-                                    <td className="border p-3 text-center">
-                                        <button className="text-red-600 hover:text-red-800 text-sm">Remove</button>
-                                    </td>
-                                </tr>
-                                <tr className="hover:bg-gray-50">
-                                    <td className="border p-3 font-mono font-semibold">TSLA</td>
-                                    <td className="border p-3 text-gray-700">Tesla, Inc.</td>
-                                    <td className="border p-3 text-right font-semibold">$248.50</td>
-                                    <td className="border p-3 text-right text-red-600">-1.25%</td>
-                                    <td className="border p-3 text-center">
-                                        <button className="text-red-600 hover:text-red-800 text-sm">Remove</button>
-                                    </td>
-                                </tr>
-                                <tr className="hover:bg-gray-50">
-                                    <td className="border p-3 font-mono font-semibold">MSFT</td>
-                                    <td className="border p-3 text-gray-700">Microsoft Corporation</td>
-                                    <td className="border p-3 text-right font-semibold">$378.85</td>
-                                    <td className="border p-3 text-right text-green-600">+0.87%</td>
-                                    <td className="border p-3 text-center">
-                                        <button className="text-red-600 hover:text-red-800 text-sm">Remove</button>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <div className="mt-4 text-sm text-gray-500">
-                        <p>💡 Tip: Add symbols to your watchlist to track price movements and receive alerts.</p>
-                    </div>
-                </div>
-
-                <div className="bg-gray-50 rounded-lg p-6">
-                    <p className="text-sm text-gray-500">
-                        Logged in as: <span className="font-semibold text-gray-700">{user.email}</span>
-                    </p>
-                    <p className="text-xs text-gray-400 mt-2">
-                        Backend connection verified ✅
-                    </p>
-                </div>
-            </div>
-        );
-    } catch (err) {
-        console.error("❌ Watchlist page error:", err);
-        return (
-            <div className="p-6 text-center">
-                <h1 className="text-2xl font-bold text-red-600">Server Error</h1>
-                <p className="text-gray-600 mt-2">
-                    Could not load page. Please try again later.
-                </p>
-            </div>
-        );
+  /* ─────────────── Load Saved Watchlist ─────────────── */
+  useEffect(() => {
+    const saved = localStorage.getItem("watchlist");
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) setTickers(parsed);
+      } catch (e) {
+        console.error("Error loading watchlist:", e);
+      }
     }
-}
+  }, []);
 
+  /* ─────────────── Save Watchlist ─────────────── */
+  useEffect(() => {
+    if (tickers.length > 0) {
+      localStorage.setItem("watchlist", JSON.stringify(tickers));
+    }
+  }, [tickers]);
+
+  /* ─────────────── Fetch Stock Data ─────────────── */
+  const loadStockData = async () => {
+    if (!tickers.length) {
+      setStockData([]);
+      return;
+    }
+    
+    if (!polygonKey) {
+      setError("Polygon API key not configured.");
+      return;
+    }
+    
+    setRefreshing(true);
+    try {
+      const data = await fetchStockSummary(tickers, polygonKey);
+      setStockData(data);
+      setError("");
+    } catch (err) {
+      console.error(err);
+      setError("Failed to fetch stock data.");
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  useEffect(() => {
+    loadStockData();
+  }, [tickers]);
+
+  /* ─────────────── Add / Remove ─────────────── */
+  const addTicker = async () => {
+    const symbol = newTicker.trim().toUpperCase();
+    if (!symbol) return;
+    if (tickers.includes(symbol)) {
+      setError("Ticker already in watchlist.");
+      return;
+    }
+    
+    if (!polygonKey) {
+      setError("Polygon API key not configured.");
+      return;
+    }
+    
+    setError("");
+    setLoading(true);
+    try {
+      // ✅ Quick validation via Polygon API
+      const check = await fetchStockSummary([symbol], polygonKey);
+      if (check.length === 0) throw new Error("Invalid ticker.");
+      setTickers((prev) => [...prev, symbol]);
+      setNewTicker("");
+    } catch (err) {
+      console.error(err);
+      setError("Invalid or unknown stock symbol.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const removeTicker = (symbol: string) => {
+    setTickers((prev) => prev.filter((t) => t !== symbol));
+  };
+
+  /* ─────────────── Render ─────────────── */
+  return (
+    <main
+      className={`min-h-screen px-8 py-20 transition-colors duration-500 ${
+        theme === "dark"
+          ? "bg-gradient-to-b from-black via-gray-950 to-black text-white"
+          : "bg-gradient-to-b from-[#f5f7fa] via-[#c3e0dc] to-[#9ad0c2] text-gray-900"
+      }`}
+    >
+      <div className="max-w-5xl mx-auto">
+        <h1 className={`text-3xl font-bold mb-6 ${
+          theme === "dark" ? "text-white" : "text-gray-900"
+        }`}>My Watchlist</h1>
+        <p className={`text-sm mb-6 opacity-80 ${
+          theme === "dark" ? "text-gray-300" : "text-gray-700"
+        }`}>
+          Keep track of your favorite stocks at a glance.
+        </p>
+
+        {/* Add Ticker */}
+        <div className="flex flex-wrap gap-3 mb-8 items-center">
+          <div className="flex items-center gap-2">
+            <input
+              type="text"
+              placeholder="Enter ticker (e.g. AAPL)"
+              value={newTicker}
+              onChange={(e) => setNewTicker(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && addTicker()}
+              className={`px-4 py-2 rounded-lg border focus:ring-2 focus:ring-blue-500 ${
+                theme === "dark"
+                  ? "bg-gray-800 border-gray-700 text-white"
+                  : "bg-white border-gray-300 text-black"
+              }`}
+            />
+            <button
+              onClick={addTicker}
+              disabled={loading}
+              className={`px-4 py-2 rounded-lg disabled:opacity-50 transition-all ${
+                theme === "dark"
+                  ? "bg-blue-600 hover:bg-blue-700"
+                  : "bg-blue-400 hover:bg-blue-500 text-white"
+              }`}
+            >
+              {loading ? "Adding..." : "Add"}
+            </button>
+          </div>
+
+          <button
+            onClick={loadStockData}
+            disabled={refreshing || tickers.length === 0}
+            className={`px-4 py-2 rounded-lg disabled:opacity-50 transition-all ${
+              theme === "dark"
+                ? "bg-green-600 hover:bg-green-700"
+                : "bg-green-400 hover:bg-green-500 text-white"
+            }`}
+          >
+            {refreshing ? "Refreshing..." : "Refresh Prices"}
+          </button>
+        </div>
+
+        {error && <p className={`mb-4 ${theme === "dark" ? "text-red-400" : "text-red-600"}`}>{error}</p>}
+
+        {/* Watchlist Table */}
+        {stockData.length === 0 ? (
+          <p className={theme === "dark" ? "text-gray-400" : "text-gray-600"}>
+            No stocks in your watchlist yet. Add one above to get started.
+          </p>
+        ) : (
+          <div
+            className={`rounded-xl border shadow-md overflow-x-auto transition-colors ${
+              theme === "dark"
+                ? "bg-gray-900 border-gray-700"
+                : "bg-[#eaf5f3] border-[#cde3dd]"
+            }`}
+          >
+            <table className="min-w-full text-sm">
+              <thead>
+                <tr
+                  className={`text-left border-b ${
+                    theme === "dark" ? "border-gray-700" : "border-gray-300"
+                  }`}
+                >
+                  <th className={`py-3 px-4 ${
+                    theme === "dark" ? "text-gray-300" : "text-gray-700"
+                  }`}>Symbol</th>
+                  <th className={`py-3 px-4 ${
+                    theme === "dark" ? "text-gray-300" : "text-gray-700"
+                  }`}>Name</th>
+                  <th className={`py-3 px-4 text-right ${
+                    theme === "dark" ? "text-gray-300" : "text-gray-700"
+                  }`}>Price</th>
+                  <th className={`py-3 px-4 text-right ${
+                    theme === "dark" ? "text-gray-300" : "text-gray-700"
+                  }`}>Change</th>
+                  <th className={`py-3 px-4 text-right ${
+                    theme === "dark" ? "text-gray-300" : "text-gray-700"
+                  }`}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {stockData.map((s) => (
+                  <tr
+                    key={s.symbol}
+                    className={`border-b last:border-none ${
+                      theme === "dark"
+                        ? "border-gray-800 hover:bg-gray-800/60"
+                        : "border-gray-200 hover:bg-[#d9ebe7]"
+                    }`}
+                  >
+                    <td className={`py-3 px-4 font-semibold ${
+                      theme === "dark" ? "text-white" : "text-gray-900"
+                    }`}>{s.symbol}</td>
+                    <td className={`py-3 px-4 ${
+                      theme === "dark" ? "text-gray-300" : "text-gray-700"
+                    }`}>{s.name}</td>
+                    <td className={`py-3 px-4 text-right ${
+                      theme === "dark" ? "text-white" : "text-gray-900"
+                    }`}>${s.price.toFixed(2)}</td>
+                    <td
+                      className={`py-3 px-4 text-right font-medium ${
+                        s.changePercent >= 0
+                          ? "text-green-500"
+                          : "text-red-500"
+                      }`}
+                    >
+                      {s.changePercent >= 0 ? "+" : ""}
+                      {s.changePercent.toFixed(2)}%
+                    </td>
+                    <td className="py-3 px-4 text-right">
+                      <button
+                        onClick={() => removeTicker(s.symbol)}
+                        className="text-red-500 hover:text-red-700 transition"
+                      >
+                        ✕
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </main>
+  );
+}
