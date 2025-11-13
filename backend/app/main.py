@@ -9,6 +9,7 @@ from app.api.trades_router import router as trades_router
 from app.api.debug_router import router as debug_router
 from app.api.watchlist_router import router as watchlist_router
 from app.api.chat_router import router as chat_router
+from app.api.pattern_trends_router import router as pattern_trends_router
 from app.db.database import Base, engine
 from app.core.config import settings
 
@@ -104,6 +105,7 @@ app.include_router(auth_router, prefix="/auth", tags=["Authentication"])
 app.include_router(trades_router, prefix="/trades", tags=["Trades"])
 app.include_router(watchlist_router, tags=["Watchlist"])
 app.include_router(chat_router, tags=["Chat"])
+app.include_router(pattern_trends_router, tags=["Pattern Trends"])
 app.include_router(debug_router)
 
 

@@ -28,6 +28,11 @@ class User(Base):
     chat_messages: Mapped[list["ChatMessage"]] = relationship(
         "ChatMessage", back_populates="user", cascade="all, delete-orphan", order_by="ChatMessage.created_at"
     )
+    
+    # Relationship to pattern trends items
+    pattern_trends_items: Mapped[list["PatternTrendsItem"]] = relationship(
+        "PatternTrendsItem", back_populates="user", cascade="all, delete-orphan"
+    )
 
 
 class WatchlistItem(Base):
@@ -57,3 +62,17 @@ class ChatMessage(Base):
     
     # Relationship to user
     user: Mapped["User"] = relationship("User", back_populates="chat_messages")
+
+
+class PatternTrendsItem(Base):
+    __tablename__ = "pattern_trends_items"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    symbol: Mapped[str] = mapped_column(String(10), nullable=False, index=True)  # e.g., "AAPL", "TSLA"
+    created_at: Mapped[DateTime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+    
+    # Relationship to user
+    user: Mapped["User"] = relationship("User", back_populates="pattern_trends_items")

@@ -69,8 +69,10 @@ export default function DeepResearchContent() {
   const [rangeMode, setRangeMode] = useState<"preset" | "custom">("preset");
   const [inWatchlist, setInWatchlist] = useState(false);
   const [inMyAssets, setInMyAssets] = useState(false);
+  const [inPatternTrends, setInPatternTrends] = useState(false);
   const [addingToWatchlist, setAddingToWatchlist] = useState(false);
   const [addingToAssets, setAddingToAssets] = useState(false);
+  const [addingToPatternTrends, setAddingToPatternTrends] = useState(false);
 
   // Load saved state from localStorage (only if no URL symbol)
   useEffect(() => {
@@ -371,6 +373,83 @@ Summarize technical outlook, momentum, and risk in 5 sentences.
     }
   };
 
+  // Check pattern trends status
+  const checkPatternTrendsStatus = useCallback(async () => {
+    if (typeof window === 'undefined' || !symbol) return;
+    
+    try {
+      const res = await fetch("/api/pattern-trends", {
+        credentials: "include",
+        cache: "no-store",
+      });
+      
+      if (res.ok) {
+        const data = await res.json();
+        const symbols = data.items?.map((item: any) => item.symbol) || [];
+        setInPatternTrends(symbols.includes(symbol.toUpperCase()));
+      }
+    } catch (e) {
+      console.error("Error checking pattern trends status:", e);
+    }
+  }, [symbol]);
+
+  // Check pattern trends on mount and when symbol changes
+  useEffect(() => {
+    if (symbol) {
+      checkPatternTrendsStatus();
+    }
+  }, [symbol, checkPatternTrendsStatus]);
+
+  // Add to Pattern Trends
+  const addToPatternTrends = async () => {
+    if (typeof window === 'undefined') return;
+    
+    const symToUse = symbol || (results?.sym as string) || "";
+    if (!symToUse || addingToPatternTrends) return;
+    setAddingToPatternTrends(true);
+    
+    try {
+      const sym = symToUse.toUpperCase().trim();
+      if (!sym) {
+        addToast("Invalid symbol", "error");
+        setAddingToPatternTrends(false);
+        return;
+      }
+      
+      // Add to backend API
+      const res = await fetch("/api/pattern-trends", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({ symbol: sym }),
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        if (res.status === 400 && errorData.detail?.includes("already")) {
+          addToast(`${sym} is already in Pattern Trends`, "info");
+          await checkPatternTrendsStatus();
+          setAddingToPatternTrends(false);
+          return;
+        }
+        throw new Error(errorData.detail || "Failed to add to pattern trends");
+      }
+
+      setInPatternTrends(true);
+      addToast(`Added ${sym} to Pattern Trends`, "success");
+      
+      // Navigate to pattern trends page with symbol
+      window.location.href = `/pattern-trends?symbol=${encodeURIComponent(sym)}`;
+    } catch (e: any) {
+      console.error("Error adding to pattern trends:", e);
+      addToast(e.message || "Failed to add to pattern trends", "error");
+    } finally {
+      setAddingToPatternTrends(false);
+    }
+  };
+
   // Add to My Assets
   const addToMyAssets = async () => {
     if (!symbol || !results || addingToAssets) return;
@@ -659,6 +738,31 @@ Summarize technical outlook, momentum, and risk in 5 sentences.
                         <>
                           <Plus className="w-4 h-4" />
                           {addingToAssets ? "Adding..." : "Add to My Assets"}
+                        </>
+                      )}
+                    </button>
+                    <button
+                      onClick={addToPatternTrends}
+                      disabled={addingToPatternTrends || inPatternTrends}
+                      className={`px-3 py-1.5 rounded-lg text-sm flex items-center gap-2 transition-all disabled:opacity-50 ${
+                        inPatternTrends
+                          ? theme === "dark"
+                            ? "bg-green-700 text-white"
+                            : "bg-green-100 text-green-800"
+                          : theme === "dark"
+                          ? "bg-orange-600 hover:bg-orange-700 text-white"
+                          : "bg-orange-500 hover:bg-orange-600 text-white"
+                      }`}
+                    >
+                      {inPatternTrends ? (
+                        <>
+                          <Check className="w-4 h-4" />
+                          In Pattern Trends
+                        </>
+                      ) : (
+                        <>
+                          <Plus className="w-4 h-4" />
+                          {addingToPatternTrends ? "Adding..." : "Add to Pattern Trends"}
                         </>
                       )}
                     </button>
