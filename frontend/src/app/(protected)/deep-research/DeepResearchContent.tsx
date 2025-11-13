@@ -67,12 +67,28 @@ export default function DeepResearchContent() {
   const [customFrom, setCustomFrom] = useState("");
   const [customTo, setCustomTo] = useState("");
   const [rangeMode, setRangeMode] = useState<"preset" | "custom">("preset");
+  const [user, setUser] = useState<any>(null);
   const [inWatchlist, setInWatchlist] = useState(false);
   const [inMyAssets, setInMyAssets] = useState(false);
   const [inPatternTrends, setInPatternTrends] = useState(false);
   const [addingToWatchlist, setAddingToWatchlist] = useState(false);
   const [addingToAssets, setAddingToAssets] = useState(false);
   const [addingToPatternTrends, setAddingToPatternTrends] = useState(false);
+
+  // Load user info
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch("/api/me", { cache: "no-store" });
+        if (res.ok) {
+          const data = await res.json();
+          setUser(data);
+        }
+      } catch (err) {
+        console.error("Error fetching user:", err);
+      }
+    })();
+  }, []);
 
   // Load saved state from localStorage (only if no URL symbol)
   useEffect(() => {
@@ -275,9 +291,12 @@ Summarize technical outlook, momentum, and risk in 5 sentences.
         setInWatchlist(watchlistSymbols.includes(symToCheck.toUpperCase()));
       }
       
-      // Check My Assets from localStorage (still using localStorage for now)
-      const myAssets = JSON.parse(localStorage.getItem("myAssets") || "[]");
-      setInMyAssets(Array.isArray(myAssets) && myAssets.some((a: any) => a.symbol === symToCheck.toUpperCase()));
+      // Check My Assets from localStorage (user-specific)
+      if (user) {
+        const storageKey = `myAssets_${user.id || user.email || 'default'}`;
+        const myAssets = JSON.parse(localStorage.getItem(storageKey) || "[]");
+        setInMyAssets(Array.isArray(myAssets) && myAssets.some((a: any) => a.symbol === symToCheck.toUpperCase()));
+      }
     } catch (e) {
       console.error("Error checking watchlist status:", e);
     }
@@ -285,7 +304,7 @@ Summarize technical outlook, momentum, and risk in 5 sentences.
 
   useEffect(() => {
     checkWatchlistStatus();
-  }, [checkWatchlistStatus, results, symbol]);
+  }, [checkWatchlistStatus, results, symbol, user]);
 
   // Listen for watchlist updates to refresh status
   useEffect(() => {
@@ -452,11 +471,12 @@ Summarize technical outlook, momentum, and risk in 5 sentences.
 
   // Add to My Assets
   const addToMyAssets = async () => {
-    if (!symbol || !results || addingToAssets) return;
+    if (!symbol || !results || addingToAssets || !user) return;
     setAddingToAssets(true);
     try {
       const sym = symbol.toUpperCase();
-      const myAssets = JSON.parse(localStorage.getItem("myAssets") || "[]");
+      const storageKey = `myAssets_${user.id || user.email || 'default'}`;
+      const myAssets = JSON.parse(localStorage.getItem(storageKey) || "[]");
       
       // Check if already exists
       if (myAssets.some((a: any) => a.symbol === sym)) {
@@ -490,7 +510,7 @@ Summarize technical outlook, momentum, and risk in 5 sentences.
       };
 
       myAssets.push(asset);
-      localStorage.setItem("myAssets", JSON.stringify(myAssets));
+      localStorage.setItem(storageKey, JSON.stringify(myAssets));
       setInMyAssets(true);
       addToast(`Added ${sym} to My Assets`, "success");
     } catch (e) {

@@ -73,10 +73,14 @@ export default function RiskManagementPage() {
     }
   }
 
-  // Load assets from localStorage
+  // Load assets from localStorage (user-specific)
   useEffect(() => {
-    const saved = localStorage.getItem('myAssets')
-    const savedShares = localStorage.getItem('riskManagementShares')
+    if (!user) return; // Wait for user to load
+    
+    const storageKey = `myAssets_${user.id || user.email || 'default'}`;
+    const sharesKey = `riskManagementShares_${user.id || user.email || 'default'}`;
+    const saved = localStorage.getItem(storageKey)
+    const savedShares = localStorage.getItem(sharesKey)
     
     if (saved) {
       try {
@@ -99,18 +103,18 @@ export default function RiskManagementPage() {
             setShareAmounts(shares)
           } catch (e) {
             console.error('Error loading share amounts:', e)
-            // Initialize with default of 0 shares for each asset
+            // Initialize with default of 1 share for each asset
             const defaultShares: Record<string, number> = {}
             validAssets.forEach((a: Asset) => {
-              defaultShares[a.symbol] = 0
+              defaultShares[a.symbol] = 1
             })
             setShareAmounts(defaultShares)
           }
         } else {
-          // Initialize with default of 0 shares for each asset
+          // Initialize with default of 1 share for each asset
           const defaultShares: Record<string, number> = {}
           validAssets.forEach((a: Asset) => {
-            defaultShares[a.symbol] = 0
+            defaultShares[a.symbol] = 1
           })
           setShareAmounts(defaultShares)
         }
@@ -119,25 +123,33 @@ export default function RiskManagementPage() {
         setAssets([])
         setShareAmounts({})
       }
+    } else {
+      // No saved assets for this user
+      setAssets([])
+      setShareAmounts({})
     }
     loadRiskSettings().finally(() => setLoading(false))
-  }, [])
+  }, [user])
 
-  // Save share amounts to localStorage whenever they change
+  // Save share amounts to localStorage whenever they change (user-specific)
   useEffect(() => {
+    if (!user) return; // Wait for user to load
+    const sharesKey = `riskManagementShares_${user.id || user.email || 'default'}`;
     if (Object.keys(shareAmounts).length > 0) {
-      localStorage.setItem('riskManagementShares', JSON.stringify(shareAmounts))
+      localStorage.setItem(sharesKey, JSON.stringify(shareAmounts))
+    } else {
+      localStorage.removeItem(sharesKey)
     }
-  }, [shareAmounts])
+  }, [shareAmounts, user])
 
-  // Update share amounts when assets change (add new assets with 0 shares)
+  // Update share amounts when assets change (add new assets with 1 share)
   useEffect(() => {
     const updatedShares = { ...shareAmounts }
     let hasChanges = false
     
     assets.forEach((asset) => {
       if (!(asset.symbol in updatedShares)) {
-        updatedShares[asset.symbol] = 0
+        updatedShares[asset.symbol] = 1
         hasChanges = true
       }
     })

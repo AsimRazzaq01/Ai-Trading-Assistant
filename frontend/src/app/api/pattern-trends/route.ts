@@ -73,6 +73,14 @@ export async function POST(req: NextRequest) {
             cache: "no-store",
         });
 
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            return NextResponse.json(
+                { detail: errorData.detail || "Failed to add to pattern trends" },
+                { status: response.status }
+            );
+        }
+
         const data = await response.json();
         const nextRes = NextResponse.json(data, { status: response.status });
 

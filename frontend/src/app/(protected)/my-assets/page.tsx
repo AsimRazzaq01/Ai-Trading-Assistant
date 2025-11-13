@@ -95,6 +95,7 @@ export default function MyAssetsPage() {
   const [newAsset, setNewAsset] = useState("");
   const [compareList, setCompareList] = useState<string[]>([]);
   const [compareResult, setCompareResult] = useState("");
+  const [user, setUser] = useState<any>(null);
 
   // UI state
   const [error, setError] = useState("");
@@ -157,23 +158,63 @@ export default function MyAssetsPage() {
   const removeToast = (id: number) =>
     setToasts((t) => t.filter((x) => x.id !== id));
 
+  // Load user info
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch("/api/me", { cache: "no-store" });
+        if (res.ok) {
+          const data = await res.json();
+          setUser(data);
+        }
+      } catch (err) {
+        console.error("Error fetching user:", err);
+      }
+    })();
+  }, []);
+
   /* ─────────────── Load & Save Watchlist ─────────────── */
   useEffect(() => {
-    const saved = localStorage.getItem("myAssets");
+    if (!user) return; // Wait for user to load
+    
+    // Use user-specific localStorage key
+    const storageKey = `myAssets_${user.id || user.email || 'default'}`;
+    const saved = localStorage.getItem(storageKey);
     if (saved) {
       try {
-        setAssets(JSON.parse(saved));
+        const parsed = JSON.parse(saved);
+        // Validate that it's an array and not empty/invalid
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setAssets(parsed);
+        } else {
+          // Clear invalid data
+          localStorage.removeItem(storageKey);
+          setAssets([]);
+        }
       } catch (e) {
         console.error("Error loading assets:", e);
+        // Clear corrupted data
+        localStorage.removeItem(storageKey);
+        setAssets([]);
       }
+    } else {
+      // No saved data for this user - ensure empty array
+      setAssets([]);
     }
-  }, []);
+  }, [user]);
   
   useEffect(() => {
+    if (!user) return; // Wait for user to load
+    
+    // Use user-specific localStorage key
+    const storageKey = `myAssets_${user.id || user.email || 'default'}`;
     if (assets.length > 0) {
-      localStorage.setItem("myAssets", JSON.stringify(assets));
+      localStorage.setItem(storageKey, JSON.stringify(assets));
+    } else {
+      // Clear storage when assets are empty
+      localStorage.removeItem(storageKey);
     }
-  }, [assets]);
+  }, [assets, user]);
 
   // Reset range when all assets removed
   useEffect(() => {
