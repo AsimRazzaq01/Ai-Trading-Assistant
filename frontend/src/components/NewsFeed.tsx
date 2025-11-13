@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useTheme } from '@/context/ThemeContext'
+import NewsAnalysisModal from './NewsAnalysisModal'
 
 type Item = {
   title: string
@@ -16,6 +17,8 @@ export default function NewsFeed({ q }: { q?: string }) {
   const [items, setItems] = useState<Item[]>([])
   const [err, setErr] = useState<string | null>(null)
   const [expanded, setExpanded] = useState(false)
+  const [selectedNews, setSelectedNews] = useState<Item | null>(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
 
   useEffect(() => {
     (async () => {
@@ -80,16 +83,17 @@ export default function NewsFeed({ q }: { q?: string }) {
           )}
 
           {items.map((n, i) => (
-            <a
+            <div
               key={i}
-              href={n.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={`block rounded-xl p-3 border transition-all ${
+              className={`block rounded-xl p-3 border transition-all cursor-pointer ${
                 theme === 'dark'
                   ? 'hover:bg-gray-800 border-gray-700'
                   : 'hover:bg-white border-gray-300'
               }`}
+              onClick={() => {
+                setSelectedNews(n)
+                setIsModalOpen(true)
+              }}
             >
               <div className="flex gap-3">
                 {n.image ? (
@@ -107,7 +111,7 @@ export default function NewsFeed({ q }: { q?: string }) {
                     News
                   </div>
                 )}
-                <div className="min-w-0">
+                <div className="min-w-0 flex-1">
                   <div className={`text-sm font-medium line-clamp-2 ${
                     theme === 'dark' ? 'text-white' : 'text-gray-900'
                   }`}>{n.title}</div>
@@ -124,9 +128,17 @@ export default function NewsFeed({ q }: { q?: string }) {
                       {n.summary}
                     </div>
                   )}
+                  <div className={`text-xs mt-2 flex items-center gap-1 ${
+                    theme === 'dark' ? 'text-blue-400' : 'text-blue-600'
+                  }`}>
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                    </svg>
+                    Click for AI Analysis
+                  </div>
                 </div>
               </div>
-            </a>
+            </div>
           ))}
         </div>
 
@@ -137,6 +149,18 @@ export default function NewsFeed({ q }: { q?: string }) {
           } to-transparent`} />
         )}
       </div>
+
+      {/* News Analysis Modal */}
+      {selectedNews && (
+        <NewsAnalysisModal
+          isOpen={isModalOpen}
+          onClose={() => {
+            setIsModalOpen(false)
+            setSelectedNews(null)
+          }}
+          newsItem={selectedNews}
+        />
+      )}
     </div>
   )
 }
