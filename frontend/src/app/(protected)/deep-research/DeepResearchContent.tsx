@@ -446,7 +446,14 @@ Summarize technical outlook, momentum, and risk in 5 sentences.
       });
 
       if (!res.ok) {
-        const errorData = await res.json();
+        let errorData: any = {};
+        try {
+          errorData = await res.json();
+        } catch (e) {
+          // If response is not JSON, use status text
+          errorData = { detail: res.statusText || "Failed to add to pattern trends" };
+        }
+        
         if (res.status === 400 && errorData.detail?.includes("already")) {
           addToast(`${sym} is already in Pattern Trends`, "info");
           await checkPatternTrendsStatus();
