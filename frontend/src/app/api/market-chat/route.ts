@@ -4,6 +4,68 @@ import { NextRequest, NextResponse } from "next/server";
 
 export const runtime = "nodejs";
 
+export async function GET(req: NextRequest) {
+    try {
+        // ✅ Determine backend URL: use internal URL if available, otherwise public URL
+        const backend =
+            process.env.API_URL_INTERNAL?.trim() ||
+            process.env.NEXT_PUBLIC_API_URL_BROWSER?.trim() ||
+            "http://localhost:8000";
+
+        // ✅ Forward cookies for authentication
+        const cookie = req.headers.get("cookie") ?? "";
+
+        // ✅ Call backend to get chat messages
+        const response = await fetch(`${backend}/chat/messages`, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+                ...(cookie ? { Cookie: cookie } : {}),
+            },
+            credentials: "include",
+        }).catch((err) => {
+            console.error("❌ Network error calling backend:", err);
+            return null;
+        });
+
+        // Handle network errors or failed responses
+        if (!response) {
+            return NextResponse.json(
+                { messages: [] },
+                { status: 200 }
+            );
+        }
+
+        if (!response.ok) {
+            // Return empty messages on error
+            return NextResponse.json(
+                { messages: [] },
+                { status: 200 }
+            );
+        }
+
+        const data = await response.json().catch(() => ({
+            messages: [],
+        }));
+
+        const nextRes = NextResponse.json(data, { status: 200 });
+
+        // ✅ Forward cookies
+        const setCookie = response.headers.get("set-cookie");
+        if (setCookie) {
+            nextRes.headers.set("set-cookie", setCookie);
+        }
+
+        return nextRes;
+    } catch (err) {
+        console.error("❌ Market Chat API error:", err);
+        return NextResponse.json(
+            { messages: [] },
+            { status: 200 }
+        );
+    }
+}
+
 export async function POST(req: NextRequest) {
     try {
         const body = await req.json();
@@ -25,8 +87,7 @@ export async function POST(req: NextRequest) {
         // ✅ Forward cookies for authentication
         const cookie = req.headers.get("cookie") ?? "";
 
-        // ✅ Call backend chat endpoint (to be implemented)
-        // For now, return a placeholder response
+        // ✅ Call backend chat endpoint with OpenAI integration
         const response = await fetch(`${backend}/chat/message`, {
             method: "POST",
             headers: {
@@ -35,13 +96,34 @@ export async function POST(req: NextRequest) {
             },
             body: JSON.stringify({ message }),
             credentials: "include",
-        }).catch(() => null);
+        }).catch((err) => {
+            console.error("❌ Network error calling backend:", err);
+            return null;
+        });
 
-        // If backend endpoint doesn't exist yet, return a helpful response
-        if (!response || !response.ok) {
-            return NextResponse.json({
-                response: `I received your message: "${message}". The chat backend endpoint is being set up. This is a placeholder response.`,
-            });
+        // Handle network errors or failed responses
+        if (!response) {
+            return NextResponse.json(
+                { 
+                    error: "Failed to connect to chat service. Please try again later.",
+                    response: "I'm having trouble connecting right now. Please check your connection and try again."
+                },
+                { status: 503 }
+            );
+        }
+
+        if (!response.ok) {
+            // Try to get error details from backend
+            const errorData = await response.json().catch(() => ({}));
+            const errorMessage = errorData.detail || errorData.error || "Failed to process chat message";
+            
+            return NextResponse.json(
+                { 
+                    error: errorMessage,
+                    response: `Sorry, I encountered an error: ${errorMessage}. Please try again.`
+                },
+                { status: response.status }
+            );
         }
 
         const data = await response.json().catch(() => ({

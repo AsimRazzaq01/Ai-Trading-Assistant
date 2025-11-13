@@ -283,6 +283,9 @@ COOKIE_SECURE=False
 COOKIE_SAMESITE=lax
 COOKIE_DOMAIN=
 
+# OpenAI API (Required for Market Chat feature)
+OPENAI_API_KEY=sk-your-openai-api-key-here
+
 # Cookies (Production)
 # COOKIE_SECURE=True
 # COOKIE_SAMESITE=none
@@ -296,6 +299,9 @@ ALLOWED_ORIGINS=https://your-vercel-app.vercel.app,http://localhost:3000
 COOKIE_SECURE=True
 COOKIE_SAMESITE=none
 COOKIE_DOMAIN=
+
+# OpenAI API (Required for Market Chat feature)
+OPENAI_API_KEY=sk-your-openai-api-key-here
 ```
 
 ---
@@ -309,6 +315,7 @@ Ai-Trading-Assistant/
 │   │   ├── api/            # API routes
 │   │   │   ├── auth_router.py
 │   │   │   ├── trades_router.py
+│   │   │   ├── chat_router.py  # OpenAI chat integration
 │   │   │   └── deps.py     # Dependencies (auth, etc.)
 │   │   ├── core/           # Core configuration
 │   │   │   ├── config.py

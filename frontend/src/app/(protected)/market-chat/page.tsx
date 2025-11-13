@@ -6,38 +6,63 @@ import { useTheme } from "@/context/ThemeContext";
 export default function MarketChatPage() {
   const { theme } = useTheme();
   
-  // Load saved messages from localStorage
-  const loadSavedMessages = (): Array<{ role: string; content: string; timestamp: Date }> => {
-    try {
-      const saved = localStorage.getItem("marketChatMessages");
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        return parsed.map((m: any) => ({
-          ...m,
-          timestamp: new Date(m.timestamp)
-        }));
-      }
-    } catch (e) {
-      console.error("Error loading saved messages:", e);
-    }
-    return [{
-      role: "assistant",
-      content: "Welcome to Market Chat! I'm your AI trading assistant. Ask me anything about the markets, trading strategies, or get real-time insights.",
-      timestamp: new Date(),
-    }];
-  };
-
-  const [messages, setMessages] = useState<Array<{ role: string; content: string; timestamp: Date }>>(loadSavedMessages);
+  const [messages, setMessages] = useState<Array<{ id?: number; role: string; content: string; timestamp: Date }>>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [loadingMessages, setLoadingMessages] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Save messages to localStorage
+  // Load messages from backend on mount
   useEffect(() => {
-    if (messages.length > 1) { // Only save if there are actual messages (more than just welcome)
-      localStorage.setItem("marketChatMessages", JSON.stringify(messages));
-    }
-  }, [messages]);
+    const fetchMessages = async () => {
+      try {
+        const res = await fetch("/api/market-chat", {
+          method: "GET",
+          credentials: "include",
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          if (data.messages && data.messages.length > 0) {
+            // Convert backend messages to frontend format
+            const formattedMessages = data.messages.map((m: any) => ({
+              id: m.id,
+              role: m.role,
+              content: m.content,
+              timestamp: new Date(m.timestamp),
+            }));
+            setMessages(formattedMessages);
+          } else {
+            // No messages - show welcome message
+            setMessages([{
+              role: "assistant",
+              content: "Welcome to Market Chat! I'm your AI trading assistant. Ask me anything about the markets, trading strategies, or get real-time insights.",
+              timestamp: new Date(),
+            }]);
+          }
+        } else {
+          // Error loading - show welcome message
+          setMessages([{
+            role: "assistant",
+            content: "Welcome to Market Chat! I'm your AI trading assistant. Ask me anything about the markets, trading strategies, or get real-time insights.",
+            timestamp: new Date(),
+          }]);
+        }
+      } catch (err) {
+        console.error("❌ Error loading messages:", err);
+        // Error loading - show welcome message
+        setMessages([{
+          role: "assistant",
+          content: "Welcome to Market Chat! I'm your AI trading assistant. Ask me anything about the markets, trading strategies, or get real-time insights.",
+          timestamp: new Date(),
+        }]);
+      } finally {
+        setLoadingMessages(false);
+      }
+    };
+
+    fetchMessages();
+  }, []);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -57,6 +82,7 @@ export default function MarketChatPage() {
       timestamp: new Date(),
     };
 
+    const messageToSend = input;
     setMessages((prev) => [...prev, userMessage]);
     setInput("");
     setLoading(true);
@@ -68,15 +94,18 @@ export default function MarketChatPage() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ message: input }),
+        body: JSON.stringify({ message: messageToSend }),
         credentials: "include",
       });
 
+      const data = await res.json();
+      
       if (!res.ok) {
-        throw new Error("Failed to get response");
+        // Use error message from API if available
+        const errorContent = data.response || data.error || "Failed to get response";
+        throw new Error(errorContent);
       }
 
-      const data = await res.json();
       const assistantMessage = {
         role: "assistant",
         content: data.response || "I'm sorry, I couldn't process that request.",
@@ -84,11 +113,36 @@ export default function MarketChatPage() {
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
+      
+      // Reload messages from backend to get the stored versions with IDs
+      // This ensures we have the latest state from the database
+      setTimeout(async () => {
+        try {
+          const refreshRes = await fetch("/api/market-chat", {
+            method: "GET",
+            credentials: "include",
+          });
+          if (refreshRes.ok) {
+            const refreshData = await refreshRes.json();
+            if (refreshData.messages && refreshData.messages.length > 0) {
+              const formattedMessages = refreshData.messages.map((m: any) => ({
+                id: m.id,
+                role: m.role,
+                content: m.content,
+                timestamp: new Date(m.timestamp),
+              }));
+              setMessages(formattedMessages);
+            }
+          }
+        } catch (err) {
+          console.error("❌ Error refreshing messages:", err);
+        }
+      }, 500);
     } catch (err) {
       console.error("❌ Chat error:", err);
       const errorMessage = {
         role: "assistant",
-        content: "Sorry, I'm having trouble connecting. Please try again later.",
+        content: err instanceof Error ? err.message : "Sorry, I'm having trouble connecting. Please try again later.",
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, errorMessage]);
@@ -122,9 +176,14 @@ export default function MarketChatPage() {
           }`}
         >
           <div className="space-y-4">
-            {messages.map((msg, idx) => (
-              <div
-                key={idx}
+            {loadingMessages ? (
+              <div className="flex justify-center items-center py-8">
+                <div className="text-gray-500">Loading chat history...</div>
+              </div>
+            ) : (
+              messages.map((msg, idx) => (
+                <div
+                  key={msg.id || idx}
                 className={`flex ${
                   msg.role === "user" ? "justify-end" : "justify-start"
                 }`}
@@ -154,7 +213,8 @@ export default function MarketChatPage() {
                   </p>
                 </div>
               </div>
-            ))}
+              ))
+            )}
             {loading && (
               <div className="flex justify-start">
                 <div

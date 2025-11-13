@@ -17,20 +17,59 @@ export async function POST(req: NextRequest) {
             process.env.NEXT_PUBLIC_API_URL_BROWSER?.trim() ||
             "http://localhost:8000";
 
-        const response = await fetch(`${backend}/auth/login`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(body),
-            credentials: "include",
+        console.log(`🔗 Attempting to connect to backend: ${backend}/auth/login`);
+
+        // Create AbortController for timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
+        let response: Response;
+        try {
+            response = await fetch(`${backend}/auth/login`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(body),
+                credentials: "include",
+                signal: controller.signal,
+            });
+            clearTimeout(timeoutId);
+        } catch (fetchError: any) {
+            clearTimeout(timeoutId);
+            
+            if (fetchError.name === 'AbortError') {
+                console.error("❌ Request timeout - backend not responding");
+                return NextResponse.json(
+                    { 
+                        detail: `Backend connection timeout. The backend at ${backend} is not responding. Please ensure FastAPI is running.`
+                    },
+                    { status: 504 }
+                );
+            }
+            
+            // Check if it's a network error
+            if (fetchError.code === 'ECONNREFUSED' || fetchError.message?.includes('fetch failed')) {
+                console.error(`❌ Connection refused to ${backend}`);
+                return NextResponse.json(
+                    { 
+                        detail: `Cannot connect to backend at ${backend}. Please ensure FastAPI is running on port 8000.`
+                    },
+                    { status: 503 }
+                );
+            }
+            
+            throw fetchError; // Re-throw if it's a different error
+        }
+
+        const data = await response.json().catch(async () => {
+            const text = await response.text();
+            console.error("❌ Invalid JSON response from backend:", text);
+            return { message: text || "Invalid response from backend" };
         });
 
-        const data = await response.json().catch(async () => ({
-            message: await response.text(),
-        }));
-
         if (!response.ok) {
+            console.error(`❌ Backend returned error status ${response.status}:`, data);
             return NextResponse.json(
-                { detail: data.detail || "Login failed" },
+                { detail: data.detail || data.message || "Login failed" },
                 { status: response.status }
             );
         }
@@ -49,10 +88,20 @@ export async function POST(req: NextRequest) {
         }
 
         return nextRes;
-    } catch (err) {
+    } catch (err: any) {
         console.error("❌ Login proxy error:", err);
+        
+        // Provide more specific error messages
+        const errorMessage = err.message || "Unknown error";
+        const backend = 
+            process.env.API_URL_INTERNAL?.trim() ||
+            process.env.NEXT_PUBLIC_API_URL_BROWSER?.trim() ||
+            "http://localhost:8000";
+        
         return NextResponse.json(
-            { detail: "Backend connection failed. Is FastAPI running?" },
+            { 
+                detail: `Backend connection failed. Error: ${errorMessage}. Please ensure FastAPI is running at ${backend}.`
+            },
             { status: 500 }
         );
     }

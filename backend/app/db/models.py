@@ -23,6 +23,11 @@ class User(Base):
     watchlist_items: Mapped[list["WatchlistItem"]] = relationship(
         "WatchlistItem", back_populates="user", cascade="all, delete-orphan"
     )
+    
+    # Relationship to chat messages
+    chat_messages: Mapped[list["ChatMessage"]] = relationship(
+        "ChatMessage", back_populates="user", cascade="all, delete-orphan", order_by="ChatMessage.created_at"
+    )
 
 
 class WatchlistItem(Base):
@@ -37,3 +42,18 @@ class WatchlistItem(Base):
     
     # Relationship to user
     user: Mapped["User"] = relationship("User", back_populates="watchlist_items")
+
+
+class ChatMessage(Base):
+    __tablename__ = "chat_messages"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    role: Mapped[str] = mapped_column(String(20), nullable=False)  # "user" or "assistant"
+    content: Mapped[str] = mapped_column(String(5000), nullable=False)  # Message content
+    created_at: Mapped[DateTime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), index=True
+    )
+    
+    # Relationship to user
+    user: Mapped["User"] = relationship("User", back_populates="chat_messages")

@@ -47,11 +47,14 @@ export default function LoginForm() {
                 }
                 window.location.href = "/dashboard"; // redirect to dashboard
             } else {
-                alert(result?.detail || result?.message || "Login failed");
+                // Show detailed error message from backend
+                const errorMsg = result?.detail || result?.message || "Login failed";
+                alert(errorMsg);
             }
         } catch (err) {
             console.error("❌ Login network error:", err);
-            alert("Network error — is the backend running?");
+            const backendUrl = process.env.NEXT_PUBLIC_API_URL_BROWSER || "http://localhost:8000";
+            alert(`Network error — cannot connect to backend at ${backendUrl}.\n\nPlease ensure:\n1. FastAPI backend is running\n2. Backend is accessible at ${backendUrl}\n3. Check your environment variables`);
         }
     };
 
