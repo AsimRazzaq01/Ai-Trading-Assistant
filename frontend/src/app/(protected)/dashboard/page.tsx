@@ -19,16 +19,10 @@ export default function DashboardPage() {
     >
       {/* Main Content */}
       <div
-        className={`max-w-7xl mx-auto p-6 grid gap-6 md:grid-cols-3 pt-20 transition-colors duration-500`}
+        className={`max-w-7xl mx-auto p-6 grid gap-6 md:grid-cols-3 pt-24 transition-colors duration-500`}
       >
         {/* Left: Top Performing Stocks */}
-        <section
-          className={`md:col-span-2 space-y-6 p-4 rounded-xl transition-all duration-300 ${
-            theme === 'dark'
-              ? 'bg-gray-900 border border-gray-800 shadow-md'
-              : 'bg-[#eaf5f3] border border-[#cde3dd] shadow-sm'
-          }`}
-        >
+        <section className="md:col-span-2 space-y-4">
           <h2
             className={`text-2xl font-semibold mb-4 ${
               theme === 'dark' ? 'text-white' : 'text-gray-900'
@@ -40,13 +34,7 @@ export default function DashboardPage() {
         </section>
 
         {/* Right: Latest Market News */}
-        <aside
-          className={`md:col-span-1 p-4 rounded-xl transition-all duration-300 ${
-            theme === 'dark'
-              ? 'bg-gray-900 border border-gray-800 shadow-md'
-              : 'bg-[#eaf5f3] border border-[#cde3dd] shadow-sm'
-          }`}
-        >
+        <aside className="md:col-span-1 space-y-4">
           <h2
             className={`text-2xl font-semibold mb-4 ${
               theme === 'dark' ? 'text-white' : 'text-gray-900'

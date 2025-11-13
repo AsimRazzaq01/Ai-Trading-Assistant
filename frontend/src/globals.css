@@ -2,5 +2,41 @@
 @tailwind components;
 @tailwind utilities;
 
+html, body, :root { 
+  height: 100%; 
+}
 
-html, body, :root { height: 100%; }
+/* 🌙 Dark Theme */
+:root.dark {
+  --bg: linear-gradient(to bottom, #000, #111, #000);
+  --text: #fff;
+  --card: #1a1a1a;
+}
+
+/* ☀️ Light Theme */
+:root {
+  --bg: linear-gradient(to bottom, #f5f7fa, #c3e0dc, #9ad0c2);
+  --text: #1a1a1a;
+  --card: #eaf5f3;
+}
+
+/* Glass morphism utility */
+.glass {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Card utility */
+.card {
+  background: var(--card);
+  transition: background 0.4s ease;
+}
+
+/* Smooth transitions */
+* {
+  transition-property: background-color, border-color, color, fill, stroke;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}

@@ -101,11 +101,40 @@ export default function MyAssetsPage() {
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
-  // Range controls
-  const [chartRange, setChartRange] = useState(30);
-  const [customFrom, setCustomFrom] = useState("");
-  const [customTo, setCustomTo] = useState("");
-  const [rangeMode, setRangeMode] = useState<"preset" | "custom">("preset");
+  // Range controls - Load from localStorage
+  const [chartRange, setChartRange] = useState(() => {
+    const saved = localStorage.getItem("myAssetsChartRange");
+    return saved ? parseInt(saved) : 30;
+  });
+  const [customFrom, setCustomFrom] = useState(() => {
+    const saved = localStorage.getItem("myAssetsCustomFrom");
+    return saved || "";
+  });
+  const [customTo, setCustomTo] = useState(() => {
+    const saved = localStorage.getItem("myAssetsCustomTo");
+    return saved || "";
+  });
+  const [rangeMode, setRangeMode] = useState<"preset" | "custom">(() => {
+    const saved = localStorage.getItem("myAssetsRangeMode");
+    return (saved === "custom" ? "custom" : "preset") as "preset" | "custom";
+  });
+
+  // Save range controls to localStorage
+  useEffect(() => {
+    localStorage.setItem("myAssetsChartRange", chartRange.toString());
+  }, [chartRange]);
+
+  useEffect(() => {
+    localStorage.setItem("myAssetsCustomFrom", customFrom);
+  }, [customFrom]);
+
+  useEffect(() => {
+    localStorage.setItem("myAssetsCustomTo", customTo);
+  }, [customTo]);
+
+  useEffect(() => {
+    localStorage.setItem("myAssetsRangeMode", rangeMode);
+  }, [rangeMode]);
 
   // Toasts
   const [toasts, setToasts] = useState<
@@ -642,44 +671,68 @@ export default function MyAssetsPage() {
                 </div>
 
                 {/* Chart */}
-                {a.chart?.length > 0 && (
-                  <div className="h-40 w-full mb-4">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={a.chart}>
-                        <XAxis
-                          dataKey="date"
-                          tick={{ fill: theme === "dark" ? "#ccc" : "#333" }}
-                        />
-                        <YAxis
-                          domain={[
-                            (dataMin: number) => dataMin * 0.98,
-                            (dataMax: number) => dataMax * 1.02,
-                          ]}
-                          tick={{
-                            fill: theme === "dark" ? "#ccc" : "#333",
-                            fontSize: 10,
-                          }}
-                        />
-                        <Tooltip
-                          contentStyle={{
-                            backgroundColor:
-                              theme === "dark" ? "#1f1f1f" : "#eaf5f3",
-                            border: "none",
-                            color: theme === "dark" ? "#fff" : "#000",
-                          }}
-                        />
-                        <Line
-                          type="monotone"
-                          dataKey="price"
-                          stroke={theme === "dark" ? "#3b82f6" : "#2563eb"}
-                          strokeWidth={2}
-                          dot={false}
-                          isAnimationActive={true}
-                        />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  </div>
-                )}
+                {a.chart?.length > 0 && (() => {
+                  // Calculate proper Y-axis domain
+                  const prices = a.chart
+                    .map((d: any) => typeof d.price === 'number' ? d.price : parseFloat(d.price) || 0)
+                    .filter((p: number) => isFinite(p) && p > 0);
+                  
+                  if (prices.length === 0) return null;
+                  
+                  const minPrice = Math.min(...prices);
+                  const maxPrice = Math.max(...prices);
+                  const priceRange = maxPrice - minPrice;
+                  const padding = priceRange * 0.1 || maxPrice * 0.05; // 10% padding or 5% of max
+                  
+                  const yAxisMin = Math.max(0, minPrice - padding);
+                  const yAxisMax = maxPrice + padding;
+                  
+                  return (
+                    <div className="h-40 w-full mb-4">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={a.chart}>
+                          <XAxis
+                            dataKey="date"
+                            tick={{ fill: theme === "dark" ? "#ccc" : "#333", fontSize: 10 }}
+                          />
+                          <YAxis
+                            domain={[yAxisMin, yAxisMax]}
+                            tick={{
+                              fill: theme === "dark" ? "#ccc" : "#333",
+                              fontSize: 10,
+                            }}
+                            tickFormatter={(value: number) => {
+                              if (!isFinite(value) || value <= 0) return '';
+                              if (value >= 1000) return `$${(value / 1000).toFixed(1)}k`;
+                              return `$${value.toFixed(2)}`;
+                            }}
+                            allowDataOverflow={false}
+                          />
+                          <Tooltip
+                            contentStyle={{
+                              backgroundColor:
+                                theme === "dark" ? "#1f1f1f" : "#eaf5f3",
+                              border: "none",
+                              color: theme === "dark" ? "#fff" : "#000",
+                            }}
+                            formatter={(value: any) => {
+                              const numValue = typeof value === 'number' ? value : parseFloat(value) || 0;
+                              return isFinite(numValue) ? `$${numValue.toFixed(2)}` : 'N/A';
+                            }}
+                          />
+                          <Line
+                            type="monotone"
+                            dataKey="price"
+                            stroke={theme === "dark" ? "#3b82f6" : "#2563eb"}
+                            strokeWidth={2}
+                            dot={false}
+                            isAnimationActive={true}
+                          />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
+                  );
+                })()}
 
                 {/* AI sections */}
                 <div className="space-y-2">

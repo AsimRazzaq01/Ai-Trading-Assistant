@@ -1,7 +1,7 @@
 # backend/app/db/models.py
 
-from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy import Integer, String, DateTime, func
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy import Integer, String, DateTime, func, ForeignKey
 from .database import Base
 
 
@@ -18,3 +18,22 @@ class User(Base):
     created_at: Mapped[DateTime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
+    
+    # Relationship to watchlist items
+    watchlist_items: Mapped[list["WatchlistItem"]] = relationship(
+        "WatchlistItem", back_populates="user", cascade="all, delete-orphan"
+    )
+
+
+class WatchlistItem(Base):
+    __tablename__ = "watchlist_items"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    symbol: Mapped[str] = mapped_column(String(10), nullable=False, index=True)  # e.g., "AAPL", "TSLA"
+    created_at: Mapped[DateTime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+    
+    # Relationship to user
+    user: Mapped["User"] = relationship("User", back_populates="watchlist_items")
