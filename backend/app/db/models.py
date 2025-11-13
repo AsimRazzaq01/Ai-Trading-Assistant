@@ -1,7 +1,7 @@
 # backend/app/db/models.py
 
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy import Integer, String, DateTime, func, ForeignKey
+from sqlalchemy import Integer, String, DateTime, func, ForeignKey, Float
 from .database import Base
 
 
@@ -32,6 +32,11 @@ class User(Base):
     # Relationship to pattern trends items
     pattern_trends_items: Mapped[list["PatternTrendsItem"]] = relationship(
         "PatternTrendsItem", back_populates="user", cascade="all, delete-orphan"
+    )
+    
+    # Relationship to risk settings (one-to-one)
+    risk_settings: Mapped["RiskSettings | None"] = relationship(
+        "RiskSettings", back_populates="user", uselist=False, cascade="all, delete-orphan"
     )
 
 
@@ -76,3 +81,19 @@ class PatternTrendsItem(Base):
     
     # Relationship to user
     user: Mapped["User"] = relationship("User", back_populates="pattern_trends_items")
+
+
+class RiskSettings(Base):
+    __tablename__ = "risk_settings"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False, unique=True, index=True)
+    max_position_size: Mapped[float] = mapped_column(Float, default=10.0)  # Percentage
+    stop_loss: Mapped[float] = mapped_column(Float, default=5.0)  # Percentage
+    take_profit: Mapped[float] = mapped_column(Float, default=15.0)  # Percentage
+    updated_at: Mapped[DateTime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+    
+    # Relationship to user
+    user: Mapped["User"] = relationship("User", back_populates="risk_settings")
