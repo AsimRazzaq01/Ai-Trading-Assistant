@@ -120,5 +120,51 @@ def read_me(
     return {"id": user.id, "email": user.email}
 
 
+class ChangePasswordRequest(BaseModel):
+    old_password: str = Field(..., min_length=1)
+    new_password: str = Field(..., min_length=6)
+
+
+@router.post("/change-password")
+def change_password(
+    payload: ChangePasswordRequest,
+    authorization: Optional[str] = Header(None),
+    access_token: Optional[str] = Cookie(None),
+    db: Session = Depends(get_db)
+):
+    """Change user password. Requires old password verification."""
+    token = None
+    if authorization and authorization.lower().startswith("bearer "):
+        token = authorization.split(" ", 1)[1]
+    elif access_token:
+        token = access_token
+
+    if not token:
+        raise HTTPException(status_code=401, detail="Authentication required")
+
+    try:
+        payload_jwt = jwt.decode(token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
+        user_id = int(payload_jwt.get("sub"))
+    except ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Token expired")
+    except (JWTError, ValueError, TypeError):
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+    user = db.get(models.User, user_id)
+    if not user:
+        raise HTTPException(status_code=401, detail="User not found")
+
+    # Verify old password
+    if not verify_password(payload.old_password, user.hashed_password):
+        raise HTTPException(status_code=400, detail="Current password is incorrect")
+
+    # Update password
+    user.hashed_password = hash_password(payload.new_password)
+    db.commit()
+    db.refresh(user)
+
+    return {"message": "Password changed successfully"}
+
+
 
 
