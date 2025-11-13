@@ -1,138 +1,156 @@
-// frontend/src/app/(protected)/settings/page.tsx
+'use client'
 
-import { cookies } from "next/headers";
-import React from "react";
+import { useState, useEffect } from 'react'
+import { useTheme } from '@/context/ThemeContext'
 
-export default async function SettingsPage() {
-    try {
-        const cookieStore = await cookies();
-        const token = cookieStore.get("access_token")?.value;
+export default function SettingsPage() {
+  const { theme } = useTheme()
+  const [user, setUser] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
 
-        if (!token) {
-            return (
-                <div className="p-6 text-center">
-                    <h1 className="text-2xl font-bold text-red-600">Unauthorized</h1>
-                    <p className="text-gray-600 mt-2">Please log in to continue.</p>
-                </div>
-            );
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch('/api/me', { cache: 'no-store' })
+        if (res.ok) {
+          const data = await res.json()
+          setUser(data)
         }
+      } catch (err) {
+        console.error('Error fetching user:', err)
+      } finally {
+        setLoading(false)
+      }
+    })()
+  }, [])
 
-        // ✅ Determine backend URL: use internal URL if available, otherwise public URL
-        const backend =
-            process.env.API_URL_INTERNAL?.trim() ||
-            process.env.NEXT_PUBLIC_API_URL_BROWSER?.trim() ||
-            "http://localhost:8000";
+  return (
+    <main
+      className={`min-h-screen transition-colors duration-500 ${
+        theme === 'dark'
+          ? 'bg-gradient-to-b from-black via-gray-950 to-black text-white'
+          : 'bg-gradient-to-b from-[#f5f7fa] via-[#c3e0dc] to-[#9ad0c2] text-gray-900'
+      }`}
+    >
+      <div className="max-w-7xl mx-auto p-6 pt-24">
+        <div className="text-center">
+          <h1
+            className={`text-3xl font-bold mb-6 ${
+              theme === 'dark' ? 'text-white' : 'text-blue-600'
+            }`}
+          >
+            Account Settings ⚙️
+          </h1>
 
-        // ✅ Call backend directly from server component
-        const res = await fetch(`${backend}/auth/me`, {
-            headers: {
-                Authorization: `Bearer ${token}`,
-                Cookie: `access_token=${token}`, // Also send as cookie for backend compatibility
-            },
-            cache: "no-store",
-        });
-
-        if (!res.ok) {
-            console.error(`❌ Backend returned ${res.status}`);
-            return (
-                <div className="p-6 text-center">
-                    <h1 className="text-2xl font-bold text-red-600">Server Error</h1>
-                    <p className="text-gray-600 mt-2">
-                        Could not load user data. Please try again later.
-                    </p>
+          {loading ? (
+            <div className="flex justify-center items-center py-12">
+              <div className="inline-block h-8 w-8 border-4 border-current border-t-transparent rounded-full animate-spin" />
+            </div>
+          ) : user ? (
+            <>
+              <div
+                className={`rounded-lg shadow-md p-6 mb-6 transition-all duration-300 ${
+                  theme === 'dark'
+                    ? 'bg-gray-900 border border-gray-800'
+                    : 'bg-white border border-gray-200'
+                }`}
+              >
+                <h2
+                  className={`text-xl font-semibold mb-4 ${
+                    theme === 'dark' ? 'text-white' : 'text-gray-800'
+                  }`}
+                >
+                  Account Information
+                </h2>
+                <div className="space-y-4">
+                  <div>
+                    <label
+                      className={`block text-sm font-medium mb-2 ${
+                        theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+                      }`}
+                    >
+                      Email
+                    </label>
+                    <input
+                      type="email"
+                      value={user.email || ''}
+                      readOnly
+                      className={`w-full border rounded p-2 ${
+                        theme === 'dark'
+                          ? 'bg-gray-800 border-gray-700 text-gray-300'
+                          : 'bg-gray-50 border-gray-300 text-gray-700'
+                      }`}
+                    />
+                  </div>
+                  <div>
+                    <label
+                      className={`block text-sm font-medium mb-2 ${
+                        theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+                      }`}
+                    >
+                      User ID
+                    </label>
+                    <input
+                      type="text"
+                      value={user.id || ''}
+                      readOnly
+                      className={`w-full border rounded p-2 ${
+                        theme === 'dark'
+                          ? 'bg-gray-800 border-gray-700 text-gray-300'
+                          : 'bg-gray-50 border-gray-300 text-gray-700'
+                      }`}
+                    />
+                  </div>
                 </div>
-            );
-        }
+              </div>
 
-        const user = await res.json();
-
-        return (
-            <div className="p-6 text-center">
-                <h1 className="text-3xl font-bold text-blue-600">
-                    Account Settings ⚙️
-                </h1>
-                <p className="text-gray-600 mt-2">
-                    Logged in as:{" "}
-                    <span className="font-semibold text-gray-800">{user.email}</span>
+              <div
+                className={`rounded-lg p-6 transition-all duration-300 ${
+                  theme === 'dark'
+                    ? 'bg-gray-900 border border-gray-800'
+                    : 'bg-gray-50 border border-gray-200'
+                }`}
+              >
+                <p
+                  className={`text-sm ${
+                    theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                  }`}
+                >
+                  Logged in as:{' '}
+                  <span
+                    className={`font-semibold ${
+                      theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+                    }`}
+                  >
+                    {user.email}
+                  </span>
                 </p>
-                <p className="text-gray-500 mt-1 text-sm">
-                    Backend connection verified ✅
+                <p
+                  className={`text-xs mt-2 ${
+                    theme === 'dark' ? 'text-gray-500' : 'text-gray-400'
+                  }`}
+                >
+                  Backend connection verified ✅
                 </p>
+              </div>
+            </>
+          ) : (
+            <div
+              className={`rounded-lg p-6 ${
+                theme === 'dark'
+                  ? 'bg-red-900/20 border border-red-800'
+                  : 'bg-red-50 border border-red-200'
+              }`}
+            >
+              <p
+                className={theme === 'dark' ? 'text-red-300' : 'text-red-600'}
+              >
+                Could not load user data. Please try again later.
+              </p>
             </div>
-        );
-    } catch (err) {
-        console.error("❌ Settings page error:", err);
-        return (
-            <div className="p-6 text-center">
-                <h1 className="text-2xl font-bold text-red-600">Server Error</h1>
-                <p className="text-gray-600 mt-2">
-                    Could not load user data. Please try again later.
-                </p>
-            </div>
-        );
-    }
+          )}
+        </div>
+      </div>
+    </main>
+  )
 }
-
-
-
-
-
-
-
-
-// import { cookies } from "next/headers";
-// import React from "react";
-//
-// export default async function SettingsPage() {
-//     try {
-//         const backend =
-//             process.env.NODE_ENV === "production"
-//                 ? process.env.API_URL_INTERNAL || "http://ai_backend:8000"
-//                 : process.env.NEXT_PUBLIC_API_URL_BROWSER || "http://localhost:8000";
-//
-//         const cookieStore = await cookies();
-//         const token = cookieStore.get("access_token")?.value;
-//
-//         if (!token) {
-//             return (
-//                 <div className="p-6 text-center">
-//                     <h1 className="text-2xl font-bold text-red-600">Unauthorized</h1>
-//                     <p className="text-gray-600 mt-2">Please log in to continue.</p>
-//                 </div>
-//             );
-//         }
-//
-//         const res = await fetch(`${backend}/auth/me`, {
-//             headers: { Authorization: `Bearer ${token}` },
-//             cache: "no-store",
-//         });
-//
-//         if (!res.ok) throw new Error(`Backend returned ${res.status}`);
-//         const user = await res.json();
-//
-//         return (
-//             <div className="p-6 text-center">
-//                 <h1 className="text-3xl font-bold text-blue-600">
-//                     Account Settings ⚙️
-//                 </h1>
-//                 <p className="text-gray-600 mt-2">
-//                     Logged in as:{" "}
-//                     <span className="font-semibold text-gray-800">{user.email}</span>
-//                 </p>
-//                 <p className="text-gray-500 mt-1 text-sm">
-//                     Backend connection verified ✅
-//                 </p>
-//             </div>
-//         );
-//     } catch (err) {
-//         console.error("❌ Settings page error:", err);
-//         return (
-//             <div className="p-6 text-center">
-//                 <h1 className="text-2xl font-bold text-red-600">Server Error</h1>
-//                 <p className="text-gray-600 mt-2">
-//                     Could not load user data. Please try again later.
-//                 </p>
-//             </div>
-//         );
-//     }
-// }

@@ -1,6 +1,8 @@
 //frontend/src/app/(protected)/layout.tsx
 
 import { cookies } from "next/headers";
+import FloatingWidget from "@/components/FloatingWidget";
+import Header from "@/components/Header";
 
 export const dynamic = "force-dynamic";
 
@@ -58,52 +60,11 @@ export default async function ProtectedLayout({
     }
 
     return (
-        <div className="min-h-screen bg-gray-50">
-            <header className="border-b bg-white shadow-sm sticky top-0 z-10">
-                <div className="max-w-7xl mx-auto px-4 py-3">
-                    <div className="flex items-center justify-between">
-                        <a href="/dashboard" className="font-semibold text-xl text-gray-800 hover:text-blue-600 transition">
-                            Profit Path 🚀
-                        </a>
-                        <nav className="flex gap-2 flex-wrap items-center">
-                            <a className="px-3 py-1 text-sm text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded transition" href="/dashboard">
-                                Dashboard
-                            </a>
-                            <a className="px-3 py-1 text-sm text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded transition" href="/my-assets">
-                                My Assets
-                            </a>
-                            <a className="px-3 py-1 text-sm text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded transition" href="/watchlist">
-                                Watchlist
-                            </a>
-                            <a className="px-3 py-1 text-sm text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded transition" href="/deep-research">
-                                Deep Research
-                            </a>
-                            <a className="px-3 py-1 text-sm text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded transition" href="/news-brief">
-                                News Brief
-                            </a>
-                            <a className="px-3 py-1 text-sm text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded transition" href="/pattern-trends">
-                                Pattern Trends
-                            </a>
-                            <a className="px-3 py-1 text-sm text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded transition" href="/risk-management">
-                                Risk Management
-                            </a>
-                            <a className="px-3 py-1 text-sm text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded transition" href="/market-chat">
-                                Market Chat
-                            </a>
-                            <a className="px-3 py-1 text-sm text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded transition" href="/settings">
-                                Settings
-                            </a>
-                            <form action="/api/logout" method="post" className="ml-2">
-                                <button className="px-3 py-1 text-sm text-red-600 hover:text-red-800 hover:bg-red-50 rounded transition">
-                                    Logout
-                                </button>
-                            </form>
-                        </nav>
-                    </div>
-                </div>
-            </header>
+        <>
+            <Header />
             <main className="min-h-[calc(100vh-64px)]">{children}</main>
-        </div>
+            <FloatingWidget />
+        </>
     );
 }
 

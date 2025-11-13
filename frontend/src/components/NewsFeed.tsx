@@ -32,7 +32,7 @@ export default function NewsFeed({ q }: { q?: string }) {
   }, [q])
 
   return (
-    <div className={`p-0 overflow-hidden rounded-xl transition-all duration-300 ${
+    <div className={`h-full flex flex-col overflow-hidden rounded-xl transition-all duration-300 ${
       theme === 'dark'
         ? 'bg-gray-900 border border-gray-800 shadow-md'
         : 'bg-[#eaf5f3] border border-[#cde3dd] shadow-sm'
@@ -60,8 +60,8 @@ export default function NewsFeed({ q }: { q?: string }) {
       {/* Scrollable content */}
       <div
         className={[
-          'relative',
-          expanded ? 'max-h-[72vh]' : 'max-h-[560px]',
+          'relative flex-1',
+          expanded ? 'max-h-[72vh]' : 'max-h-[500px]',
           'overflow-auto'
         ].join(' ')}
       >

@@ -13,20 +13,53 @@ export default function WatchlistPage() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
 
+  // Load saved input state
+  useEffect(() => {
+    const saved = localStorage.getItem("watchlistInputState");
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed.newTicker) setNewTicker(parsed.newTicker);
+      } catch (e) {
+        console.error("Error loading saved input state:", e);
+      }
+    }
+  }, []);
+
+  // Save input state
+  useEffect(() => {
+    if (newTicker) {
+      localStorage.setItem("watchlistInputState", JSON.stringify({ newTicker }));
+    }
+  }, [newTicker]);
+
   // ✅ Use your Polygon key from .env
   const polygonKey = process.env.NEXT_PUBLIC_POLYGON_API_KEY || "";
 
   /* ─────────────── Load Saved Watchlist ─────────────── */
   useEffect(() => {
-    const saved = localStorage.getItem("watchlist");
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) setTickers(parsed);
-      } catch (e) {
-        console.error("Error loading watchlist:", e);
+    const loadWatchlist = () => {
+      const saved = localStorage.getItem("watchlist");
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed)) setTickers(parsed);
+        } catch (e) {
+          console.error("Error loading watchlist:", e);
+        }
       }
-    }
+    };
+    
+    loadWatchlist();
+    
+    // Listen for storage events (cross-tab) and custom events (same-tab)
+    window.addEventListener('storage', loadWatchlist);
+    window.addEventListener('watchlistUpdated', loadWatchlist);
+    
+    return () => {
+      window.removeEventListener('storage', loadWatchlist);
+      window.removeEventListener('watchlistUpdated', loadWatchlist);
+    };
   }, []);
 
   /* ─────────────── Save Watchlist ─────────────── */
@@ -87,6 +120,7 @@ export default function WatchlistPage() {
       if (check.length === 0) throw new Error("Invalid ticker.");
       setTickers((prev) => [...prev, symbol]);
       setNewTicker("");
+      localStorage.removeItem("watchlistInputState");
     } catch (err) {
       console.error(err);
       setError("Invalid or unknown stock symbol.");

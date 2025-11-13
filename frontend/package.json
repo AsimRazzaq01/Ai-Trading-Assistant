@@ -11,6 +11,7 @@
     "@lottiefiles/dotlottie-web": "^0.54.0",
     "axios": "^1.7.7",
     "framer-motion": "^12.23.22",
+    "lucide-react": "^0.468.0",
     "next": "^15.5.3",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
