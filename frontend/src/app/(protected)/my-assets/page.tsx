@@ -101,38 +101,40 @@ export default function MyAssetsPage() {
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
-  // Range controls
-  const [chartRange, setChartRange] = useState(30);
-  const [customFrom, setCustomFrom] = useState("");
-  const [customTo, setCustomTo] = useState("");
-  const [rangeMode, setRangeMode] = useState<"preset" | "custom">("preset");
+  // Range controls - Load from localStorage
+  const [chartRange, setChartRange] = useState(() => {
+    const saved = localStorage.getItem("myAssetsChartRange");
+    return saved ? parseInt(saved) : 30;
+  });
+  const [customFrom, setCustomFrom] = useState(() => {
+    const saved = localStorage.getItem("myAssetsCustomFrom");
+    return saved || "";
+  });
+  const [customTo, setCustomTo] = useState(() => {
+    const saved = localStorage.getItem("myAssetsCustomTo");
+    return saved || "";
+  });
+  const [rangeMode, setRangeMode] = useState<"preset" | "custom">(() => {
+    const saved = localStorage.getItem("myAssetsRangeMode");
+    return (saved === "custom" ? "custom" : "preset") as "preset" | "custom";
+  });
 
-  // Load saved range state
+  // Save range controls to localStorage
   useEffect(() => {
-    const saved = localStorage.getItem("myAssetsRangeState");
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (parsed.chartRange) setChartRange(parsed.chartRange);
-        if (parsed.customFrom) setCustomFrom(parsed.customFrom);
-        if (parsed.customTo) setCustomTo(parsed.customTo);
-        if (parsed.rangeMode) setRangeMode(parsed.rangeMode);
-      } catch (e) {
-        console.error("Error loading saved range state:", e);
-      }
-    }
-  }, []);
+    localStorage.setItem("myAssetsChartRange", chartRange.toString());
+  }, [chartRange]);
 
-  // Save range state
   useEffect(() => {
-    const state = {
-      chartRange,
-      customFrom,
-      customTo,
-      rangeMode,
-    };
-    localStorage.setItem("myAssetsRangeState", JSON.stringify(state));
-  }, [chartRange, customFrom, customTo, rangeMode]);
+    localStorage.setItem("myAssetsCustomFrom", customFrom);
+  }, [customFrom]);
+
+  useEffect(() => {
+    localStorage.setItem("myAssetsCustomTo", customTo);
+  }, [customTo]);
+
+  useEffect(() => {
+    localStorage.setItem("myAssetsRangeMode", rangeMode);
+  }, [rangeMode]);
 
   // Toasts
   const [toasts, setToasts] = useState<
@@ -670,30 +672,20 @@ export default function MyAssetsPage() {
 
                 {/* Chart */}
                 {a.chart?.length > 0 && (() => {
-                  // Extract and validate prices
+                  // Calculate proper Y-axis domain
                   const prices = a.chart
-                    .map((d: any) => {
-                      const price = typeof d.price === 'number' ? d.price : parseFloat(d.price);
-                      return isFinite(price) && price > 0 ? price : null;
-                    })
-                    .filter((p: number | null): p is number => p !== null && p > 0);
+                    .map((d: any) => typeof d.price === 'number' ? d.price : parseFloat(d.price) || 0)
+                    .filter((p: number) => isFinite(p) && p > 0);
                   
-                  if (prices.length === 0) {
-                    return (
-                      <div className={`h-40 w-full mb-4 flex items-center justify-center ${
-                        theme === "dark" ? "text-gray-500" : "text-gray-400"
-                      }`}>
-                        No valid chart data available
-                      </div>
-                    );
-                  }
+                  if (prices.length === 0) return null;
                   
                   const minPrice = Math.min(...prices);
                   const maxPrice = Math.max(...prices);
                   const priceRange = maxPrice - minPrice;
-                  const padding = priceRange > 0 ? priceRange * 0.1 : maxPrice * 0.05;
-                  const yMin = Math.max(0, minPrice - padding);
-                  const yMax = maxPrice + padding;
+                  const padding = priceRange * 0.1 || maxPrice * 0.05; // 10% padding or 5% of max
+                  
+                  const yAxisMin = Math.max(0, minPrice - padding);
+                  const yAxisMax = maxPrice + padding;
                   
                   return (
                     <div className="h-40 w-full mb-4">
@@ -704,18 +696,17 @@ export default function MyAssetsPage() {
                             tick={{ fill: theme === "dark" ? "#ccc" : "#333", fontSize: 10 }}
                           />
                           <YAxis
-                            domain={[yMin, yMax]}
+                            domain={[yAxisMin, yAxisMax]}
                             tick={{
                               fill: theme === "dark" ? "#ccc" : "#333",
                               fontSize: 10,
-                              formatter: (value: number) => {
-                                if (!isFinite(value) || value <= 0) return "$0.00";
-                                if (value >= 1000) return `$${(value / 1000).toFixed(1)}k`;
-                                if (value >= 100) return `$${value.toFixed(2)}`;
-                                return `$${value.toFixed(2)}`;
-                              }
                             }}
-                            width={60}
+                            tickFormatter={(value: number) => {
+                              if (!isFinite(value) || value <= 0) return '';
+                              if (value >= 1000) return `$${(value / 1000).toFixed(1)}k`;
+                              return `$${value.toFixed(2)}`;
+                            }}
+                            allowDataOverflow={false}
                           />
                           <Tooltip
                             contentStyle={{
@@ -725,8 +716,8 @@ export default function MyAssetsPage() {
                               color: theme === "dark" ? "#fff" : "#000",
                             }}
                             formatter={(value: any) => {
-                              const numValue = Number(value);
-                              return isFinite(numValue) ? [`$${numValue.toFixed(2)}`, "Price"] : ["N/A", "Price"];
+                              const numValue = typeof value === 'number' ? value : parseFloat(value) || 0;
+                              return isFinite(numValue) ? `$${numValue.toFixed(2)}` : 'N/A';
                             }}
                           />
                           <Line

@@ -6,6 +6,33 @@ import { useTheme } from '@/context/ThemeContext'
 export default function RiskManagementPage() {
   const { theme } = useTheme()
   const [user, setUser] = useState<any>(null)
+  
+  // Load saved settings from localStorage
+  const [maxPositionSize, setMaxPositionSize] = useState(() => {
+    const saved = localStorage.getItem("riskMaxPositionSize");
+    return saved ? parseFloat(saved) : 10;
+  });
+  const [stopLoss, setStopLoss] = useState(() => {
+    const saved = localStorage.getItem("riskStopLoss");
+    return saved ? parseFloat(saved) : 5;
+  });
+  const [takeProfit, setTakeProfit] = useState(() => {
+    const saved = localStorage.getItem("riskTakeProfit");
+    return saved ? parseFloat(saved) : 15;
+  });
+
+  // Save settings to localStorage
+  useEffect(() => {
+    localStorage.setItem("riskMaxPositionSize", maxPositionSize.toString());
+  }, [maxPositionSize]);
+
+  useEffect(() => {
+    localStorage.setItem("riskStopLoss", stopLoss.toString());
+  }, [stopLoss]);
+
+  useEffect(() => {
+    localStorage.setItem("riskTakeProfit", takeProfit.toString());
+  }, [takeProfit]);
 
   useEffect(() => {
     (async () => {
@@ -134,60 +161,63 @@ export default function RiskManagementPage() {
               Position Limits
             </h2>
             <div className="space-y-4">
-              <div>
-                <label
-                  className={`block text-sm font-medium mb-2 ${
-                    theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
-                  }`}
-                >
-                  Max Position Size (%)
-                </label>
-                <input
-                  type="number"
-                  defaultValue="10"
-                  className={`w-full border rounded p-2 ${
-                    theme === 'dark'
-                      ? 'bg-gray-800 border-gray-700 text-white'
-                      : 'bg-white border-gray-300 text-gray-900'
-                  }`}
-                />
-              </div>
-              <div>
-                <label
-                  className={`block text-sm font-medium mb-2 ${
-                    theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
-                  }`}
-                >
-                  Stop Loss (%)
-                </label>
-                <input
-                  type="number"
-                  defaultValue="5"
-                  className={`w-full border rounded p-2 ${
-                    theme === 'dark'
-                      ? 'bg-gray-800 border-gray-700 text-white'
-                      : 'bg-white border-gray-300 text-gray-900'
-                  }`}
-                />
-              </div>
-              <div>
-                <label
-                  className={`block text-sm font-medium mb-2 ${
-                    theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
-                  }`}
-                >
-                  Take Profit (%)
-                </label>
-                <input
-                  type="number"
-                  defaultValue="15"
-                  className={`w-full border rounded p-2 ${
-                    theme === 'dark'
-                      ? 'bg-gray-800 border-gray-700 text-white'
-                      : 'bg-white border-gray-300 text-gray-900'
-                  }`}
-                />
-              </div>
+                            <div>
+                                <label
+                                  className={`block text-sm font-medium mb-2 ${
+                                    theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+                                  }`}
+                                >
+                                  Max Position Size (%)
+                                </label>
+                                <input
+                                  type="number"
+                                  value={maxPositionSize}
+                                  onChange={(e) => setMaxPositionSize(parseFloat(e.target.value) || 0)}
+                                  className={`w-full border rounded p-2 ${
+                                    theme === 'dark'
+                                      ? 'bg-gray-800 border-gray-700 text-white'
+                                      : 'bg-white border-gray-300 text-gray-900'
+                                  }`}
+                                />
+                              </div>
+                              <div>
+                                <label
+                                  className={`block text-sm font-medium mb-2 ${
+                                    theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+                                  }`}
+                                >
+                                  Stop Loss (%)
+                                </label>
+                                <input
+                                  type="number"
+                                  value={stopLoss}
+                                  onChange={(e) => setStopLoss(parseFloat(e.target.value) || 0)}
+                                  className={`w-full border rounded p-2 ${
+                                    theme === 'dark'
+                                      ? 'bg-gray-800 border-gray-700 text-white'
+                                      : 'bg-white border-gray-300 text-gray-900'
+                                  }`}
+                                />
+                              </div>
+                              <div>
+                                <label
+                                  className={`block text-sm font-medium mb-2 ${
+                                    theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+                                  }`}
+                                >
+                                  Take Profit (%)
+                                </label>
+                                <input
+                                  type="number"
+                                  value={takeProfit}
+                                  onChange={(e) => setTakeProfit(parseFloat(e.target.value) || 0)}
+                                  className={`w-full border rounded p-2 ${
+                                    theme === 'dark'
+                                      ? 'bg-gray-800 border-gray-700 text-white'
+                                      : 'bg-white border-gray-300 text-gray-900'
+                                  }`}
+                                />
+                              </div>
               <button
                 className={`w-full px-4 py-2 rounded transition ${
                   theme === 'dark'

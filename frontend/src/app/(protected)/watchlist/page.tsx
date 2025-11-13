@@ -4,6 +4,12 @@ import { useState, useEffect } from "react";
 import { useTheme } from "@/context/ThemeContext";
 import { fetchStockSummary, StockSummary } from "@/lib/fetchStockSummary";
 
+interface WatchlistItem {
+  id: number;
+  symbol: string;
+  created_at: string;
+}
+
 export default function WatchlistPage() {
   const { theme } = useTheme();
   const [tickers, setTickers] = useState<string[]>([]);
@@ -11,63 +17,58 @@ export default function WatchlistPage() {
   const [newTicker, setNewTicker] = useState("");
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [loadingWatchlist, setLoadingWatchlist] = useState(true);
   const [error, setError] = useState("");
-
-  // Load saved input state
-  useEffect(() => {
-    const saved = localStorage.getItem("watchlistInputState");
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (parsed.newTicker) setNewTicker(parsed.newTicker);
-      } catch (e) {
-        console.error("Error loading saved input state:", e);
-      }
-    }
-  }, []);
-
-  // Save input state
-  useEffect(() => {
-    if (newTicker) {
-      localStorage.setItem("watchlistInputState", JSON.stringify({ newTicker }));
-    }
-  }, [newTicker]);
 
   // ✅ Use your Polygon key from .env
   const polygonKey = process.env.NEXT_PUBLIC_POLYGON_API_KEY || "";
 
-  /* ─────────────── Load Saved Watchlist ─────────────── */
-  useEffect(() => {
-    const loadWatchlist = () => {
-      const saved = localStorage.getItem("watchlist");
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed)) setTickers(parsed);
-        } catch (e) {
-          console.error("Error loading watchlist:", e);
-        }
-      }
-    };
+  /* ─────────────── Load Watchlist from API ─────────────── */
+  const loadWatchlist = async () => {
+    setLoadingWatchlist(true);
+    setError("");
     
+    try {
+      const res = await fetch("/api/watchlist", {
+        credentials: "include",
+        cache: "no-store",
+      });
+
+      if (!res.ok) {
+        if (res.status === 401) {
+          setError("Please log in to view your watchlist.");
+          setTickers([]);
+          return;
+        }
+        throw new Error(`Failed to load watchlist: ${res.status}`);
+      }
+
+      const data = await res.json();
+      const symbols = data.items?.map((item: WatchlistItem) => item.symbol) || [];
+      setTickers(symbols);
+    } catch (e) {
+      console.error("Error loading watchlist:", e);
+      setError("Failed to load watchlist. Please try again.");
+      setTickers([]);
+    } finally {
+      setLoadingWatchlist(false);
+    }
+  };
+
+  useEffect(() => {
     loadWatchlist();
     
-    // Listen for storage events (cross-tab) and custom events (same-tab)
-    window.addEventListener('storage', loadWatchlist);
-    window.addEventListener('watchlistUpdated', loadWatchlist);
+    // Listen for watchlist updates from other components
+    const handleWatchlistUpdate = () => {
+      loadWatchlist();
+    };
+    
+    window.addEventListener('watchlistUpdated', handleWatchlistUpdate);
     
     return () => {
-      window.removeEventListener('storage', loadWatchlist);
-      window.removeEventListener('watchlistUpdated', loadWatchlist);
+      window.removeEventListener('watchlistUpdated', handleWatchlistUpdate);
     };
   }, []);
-
-  /* ─────────────── Save Watchlist ─────────────── */
-  useEffect(() => {
-    if (tickers.length > 0) {
-      localStorage.setItem("watchlist", JSON.stringify(tickers));
-    }
-  }, [tickers]);
 
   /* ─────────────── Fetch Stock Data ─────────────── */
   const loadStockData = async () => {
@@ -95,13 +96,23 @@ export default function WatchlistPage() {
   };
 
   useEffect(() => {
-    loadStockData();
-  }, [tickers]);
+    if (!loadingWatchlist && tickers.length > 0) {
+      loadStockData();
+    } else if (!loadingWatchlist) {
+      setStockData([]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tickers, loadingWatchlist]);
 
   /* ─────────────── Add / Remove ─────────────── */
   const addTicker = async () => {
     const symbol = newTicker.trim().toUpperCase();
-    if (!symbol) return;
+    if (!symbol) {
+      setError("Please enter a stock symbol.");
+      return;
+    }
+    
+    // Check if already in local state
     if (tickers.includes(symbol)) {
       setError("Ticker already in watchlist.");
       return;
@@ -117,20 +128,67 @@ export default function WatchlistPage() {
     try {
       // ✅ Quick validation via Polygon API
       const check = await fetchStockSummary([symbol], polygonKey);
-      if (check.length === 0) throw new Error("Invalid ticker.");
-      setTickers((prev) => [...prev, symbol]);
+      if (check.length === 0) {
+        throw new Error("Invalid ticker.");
+      }
+      
+      // Add to backend
+      const res = await fetch("/api/watchlist", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({ symbol }),
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        if (res.status === 400 && errorData.detail?.includes("already")) {
+          setError("Ticker already in watchlist.");
+          await loadWatchlist(); // Reload to sync
+          return;
+        }
+        throw new Error(errorData.detail || "Failed to add to watchlist");
+      }
+
+      // Reload watchlist from API
+      await loadWatchlist();
       setNewTicker("");
-      localStorage.removeItem("watchlistInputState");
-    } catch (err) {
-      console.error(err);
-      setError("Invalid or unknown stock symbol.");
+      setError(""); // Clear any previous errors
+      
+      // Trigger event for other components
+      window.dispatchEvent(new CustomEvent('watchlistUpdated'));
+    } catch (err: any) {
+      console.error("Error adding ticker:", err);
+      setError(err.message || "Invalid or unknown stock symbol. Please check the symbol and try again.");
     } finally {
       setLoading(false);
     }
   };
 
-  const removeTicker = (symbol: string) => {
-    setTickers((prev) => prev.filter((t) => t !== symbol));
+  const removeTicker = async (symbol: string) => {
+    setError("");
+    
+    try {
+      const res = await fetch(`/api/watchlist/${encodeURIComponent(symbol)}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to remove from watchlist");
+      }
+
+      // Reload watchlist from API
+      await loadWatchlist();
+      
+      // Trigger event for other components
+      window.dispatchEvent(new CustomEvent('watchlistUpdated'));
+    } catch (err) {
+      console.error("Error removing ticker:", err);
+      setError("Failed to remove ticker. Please try again.");
+    }
   };
 
   /* ─────────────── Render ─────────────── */
@@ -154,13 +212,24 @@ export default function WatchlistPage() {
 
         {/* Add Ticker */}
         <div className="flex flex-wrap gap-3 mb-8 items-center">
-          <div className="flex items-center gap-2">
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              addTicker();
+            }}
+            className="flex items-center gap-2"
+          >
             <input
               type="text"
               placeholder="Enter ticker (e.g. AAPL)"
               value={newTicker}
               onChange={(e) => setNewTicker(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && addTicker()}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  addTicker();
+                }
+              }}
               className={`px-4 py-2 rounded-lg border focus:ring-2 focus:ring-blue-500 ${
                 theme === "dark"
                   ? "bg-gray-800 border-gray-700 text-white"
@@ -168,8 +237,8 @@ export default function WatchlistPage() {
               }`}
             />
             <button
-              onClick={addTicker}
-              disabled={loading}
+              type="submit"
+              disabled={loading || loadingWatchlist}
               className={`px-4 py-2 rounded-lg disabled:opacity-50 transition-all ${
                 theme === "dark"
                   ? "bg-blue-600 hover:bg-blue-700"
@@ -178,11 +247,12 @@ export default function WatchlistPage() {
             >
               {loading ? "Adding..." : "Add"}
             </button>
-          </div>
+          </form>
 
           <button
+            type="button"
             onClick={loadStockData}
-            disabled={refreshing || tickers.length === 0}
+            disabled={refreshing || tickers.length === 0 || loadingWatchlist}
             className={`px-4 py-2 rounded-lg disabled:opacity-50 transition-all ${
               theme === "dark"
                 ? "bg-green-600 hover:bg-green-700"
@@ -195,12 +265,21 @@ export default function WatchlistPage() {
 
         {error && <p className={`mb-4 ${theme === "dark" ? "text-red-400" : "text-red-600"}`}>{error}</p>}
 
+        {/* Loading State */}
+        {loadingWatchlist && (
+          <p className={theme === "dark" ? "text-gray-400" : "text-gray-600"}>
+            Loading watchlist...
+          </p>
+        )}
+
         {/* Watchlist Table */}
-        {stockData.length === 0 ? (
+        {!loadingWatchlist && stockData.length === 0 && tickers.length === 0 && (
           <p className={theme === "dark" ? "text-gray-400" : "text-gray-600"}>
             No stocks in your watchlist yet. Add one above to get started.
           </p>
-        ) : (
+        )}
+
+        {!loadingWatchlist && stockData.length > 0 && (
           <div
             className={`rounded-xl border shadow-md overflow-x-auto transition-colors ${
               theme === "dark"

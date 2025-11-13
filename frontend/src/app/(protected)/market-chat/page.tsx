@@ -5,36 +5,39 @@ import { useTheme } from "@/context/ThemeContext";
 
 export default function MarketChatPage() {
   const { theme } = useTheme();
-  const [messages, setMessages] = useState<Array<{ role: string; content: string; timestamp: Date }>>([
-    {
+  
+  // Load saved messages from localStorage
+  const loadSavedMessages = (): Array<{ role: string; content: string; timestamp: Date }> => {
+    try {
+      const saved = localStorage.getItem("marketChatMessages");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return parsed.map((m: any) => ({
+          ...m,
+          timestamp: new Date(m.timestamp)
+        }));
+      }
+    } catch (e) {
+      console.error("Error loading saved messages:", e);
+    }
+    return [{
       role: "assistant",
       content: "Welcome to Market Chat! I'm your AI trading assistant. Ask me anything about the markets, trading strategies, or get real-time insights.",
       timestamp: new Date(),
-    },
-  ]);
+    }];
+  };
+
+  const [messages, setMessages] = useState<Array<{ role: string; content: string; timestamp: Date }>>(loadSavedMessages);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Load saved input state
+  // Save messages to localStorage
   useEffect(() => {
-    const saved = localStorage.getItem("marketChatInputState");
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (parsed.input) setInput(parsed.input);
-      } catch (e) {
-        console.error("Error loading saved input state:", e);
-      }
+    if (messages.length > 1) { // Only save if there are actual messages (more than just welcome)
+      localStorage.setItem("marketChatMessages", JSON.stringify(messages));
     }
-  }, []);
-
-  // Save input state
-  useEffect(() => {
-    if (input) {
-      localStorage.setItem("marketChatInputState", JSON.stringify({ input }));
-    }
-  }, [input]);
+  }, [messages]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -54,10 +57,9 @@ export default function MarketChatPage() {
       timestamp: new Date(),
     };
 
-        setMessages((prev) => [...prev, userMessage]);
-        setInput("");
-        localStorage.removeItem("marketChatInputState");
-        setLoading(true);
+    setMessages((prev) => [...prev, userMessage]);
+    setInput("");
+    setLoading(true);
 
     try {
       // ✅ Use API proxy route for chat

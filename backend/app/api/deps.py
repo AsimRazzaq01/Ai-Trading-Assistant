@@ -76,4 +76,6 @@ def get_current_user_from_cookie(
     return user
 
 
+# Alias for convenience
+get_current_user = get_current_user_from_cookie
 

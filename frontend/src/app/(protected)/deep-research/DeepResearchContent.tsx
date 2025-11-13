@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useTheme } from "@/context/ThemeContext";
 import { useSearchParams } from "next/navigation";
 import { Bookmark, Plus, Check } from "lucide-react";
@@ -67,56 +67,55 @@ export default function DeepResearchContent() {
   const [customFrom, setCustomFrom] = useState("");
   const [customTo, setCustomTo] = useState("");
   const [rangeMode, setRangeMode] = useState<"preset" | "custom">("preset");
+  const [inWatchlist, setInWatchlist] = useState(false);
+  const [inMyAssets, setInMyAssets] = useState(false);
+  const [addingToWatchlist, setAddingToWatchlist] = useState(false);
+  const [addingToAssets, setAddingToAssets] = useState(false);
 
   // Load saved state from localStorage (only if no URL symbol)
   useEffect(() => {
     const urlSymbol = searchParams.get("symbol");
     if (!urlSymbol) {
-      const saved = localStorage.getItem("deepResearchState");
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved);
-          if (parsed.symbol) setSymbol(parsed.symbol);
-          if (parsed.chartRange) setChartRange(parsed.chartRange);
-          if (parsed.customFrom) setCustomFrom(parsed.customFrom);
-          if (parsed.customTo) setCustomTo(parsed.customTo);
-          if (parsed.rangeMode) setRangeMode(parsed.rangeMode);
-        } catch (e) {
-          console.error("Error loading saved state:", e);
-        }
-      }
-    } else {
-      // Load range settings even when URL symbol is present
-      const saved = localStorage.getItem("deepResearchState");
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved);
-          if (parsed.chartRange) setChartRange(parsed.chartRange);
-          if (parsed.customFrom) setCustomFrom(parsed.customFrom);
-          if (parsed.customTo) setCustomTo(parsed.customTo);
-          if (parsed.rangeMode) setRangeMode(parsed.rangeMode);
-        } catch (e) {
-          console.error("Error loading saved state:", e);
-        }
-      }
+      const saved = localStorage.getItem("deepResearchSymbol");
+      if (saved) setSymbol(saved);
     }
+    
+    // Always load range settings
+    const savedRange = localStorage.getItem("deepResearchChartRange");
+    if (savedRange) setChartRange(parseInt(savedRange));
+    
+    const savedFrom = localStorage.getItem("deepResearchCustomFrom");
+    if (savedFrom) setCustomFrom(savedFrom);
+    
+    const savedTo = localStorage.getItem("deepResearchCustomTo");
+    if (savedTo) setCustomTo(savedTo);
+    
+    const savedMode = localStorage.getItem("deepResearchRangeMode");
+    if (savedMode === "custom") setRangeMode("custom");
   }, [searchParams]);
 
   // Save state to localStorage
   useEffect(() => {
-    const state = {
-      symbol,
-      chartRange,
-      customFrom,
-      customTo,
-      rangeMode,
-    };
-    localStorage.setItem("deepResearchState", JSON.stringify(state));
-  }, [symbol, chartRange, customFrom, customTo, rangeMode]);
-  const [inWatchlist, setInWatchlist] = useState(false);
-  const [inMyAssets, setInMyAssets] = useState(false);
-  const [addingToWatchlist, setAddingToWatchlist] = useState(false);
-  const [addingToAssets, setAddingToAssets] = useState(false);
+    if (symbol && !searchParams.get("symbol")) {
+      localStorage.setItem("deepResearchSymbol", symbol);
+    }
+  }, [symbol, searchParams]);
+
+  useEffect(() => {
+    localStorage.setItem("deepResearchChartRange", chartRange.toString());
+  }, [chartRange]);
+
+  useEffect(() => {
+    localStorage.setItem("deepResearchCustomFrom", customFrom);
+  }, [customFrom]);
+
+  useEffect(() => {
+    localStorage.setItem("deepResearchCustomTo", customTo);
+  }, [customTo]);
+
+  useEffect(() => {
+    localStorage.setItem("deepResearchRangeMode", rangeMode);
+  }, [rangeMode]);
 
   /* Toast Handler */
   const addToast = (msg: string, kind = "info") => {
@@ -236,6 +235,7 @@ Summarize technical outlook, momentum, and risk in 5 sentences.
       }
 
       // 5️⃣ Save all results at once
+      setSymbol(sym); // Ensure symbol state is set
       setResults({ sym, chartData, snapshot, patternText, aiInsight });
       addToast(`Analysis for ${sym} complete.`, "success");
     } catch (err) {
@@ -253,15 +253,53 @@ Summarize technical outlook, momentum, and risk in 5 sentences.
   };
 
   // Check if symbol is in watchlist or My Assets
-  useEffect(() => {
-    if (symbol) {
-      const watchlist = JSON.parse(localStorage.getItem("watchlist") || "[]");
-      setInWatchlist(watchlist.includes(symbol.toUpperCase()));
-
+  const checkWatchlistStatus = useCallback(async () => {
+    // Guard for SSR/production safety
+    if (typeof window === 'undefined') return;
+    
+    const symToCheck = symbol || (results?.sym as string) || "";
+    if (!symToCheck) return;
+    
+    try {
+      // Check watchlist from API
+      const res = await fetch("/api/watchlist", {
+        credentials: "include",
+        cache: "no-store",
+      });
+      
+      if (res.ok) {
+        const data = await res.json();
+        const watchlistSymbols = data.items?.map((item: any) => item.symbol) || [];
+        setInWatchlist(watchlistSymbols.includes(symToCheck.toUpperCase()));
+      }
+      
+      // Check My Assets from localStorage (still using localStorage for now)
       const myAssets = JSON.parse(localStorage.getItem("myAssets") || "[]");
-      setInMyAssets(myAssets.some((a: any) => a.symbol === symbol.toUpperCase()));
+      setInMyAssets(Array.isArray(myAssets) && myAssets.some((a: any) => a.symbol === symToCheck.toUpperCase()));
+    } catch (e) {
+      console.error("Error checking watchlist status:", e);
     }
   }, [symbol, results]);
+
+  useEffect(() => {
+    checkWatchlistStatus();
+  }, [checkWatchlistStatus, results, symbol]);
+
+  // Listen for watchlist updates to refresh status
+  useEffect(() => {
+    // Guard for SSR/production safety
+    if (typeof window === 'undefined') return;
+    
+    const handleWatchlistUpdate = () => {
+      checkWatchlistStatus();
+    };
+
+    window.addEventListener('watchlistUpdated', handleWatchlistUpdate);
+
+    return () => {
+      window.removeEventListener('watchlistUpdated', handleWatchlistUpdate);
+    };
+  }, [checkWatchlistStatus]);
 
   // Check for symbol in URL query params
   useEffect(() => {
@@ -280,26 +318,54 @@ Summarize technical outlook, momentum, and risk in 5 sentences.
   }, [searchParams]);
 
   // Add to watchlist
-  const addToWatchlist = () => {
-    if (!symbol || addingToWatchlist) return;
+  const addToWatchlist = async () => {
+    // Guard for SSR/production safety
+    if (typeof window === 'undefined') return;
+    
+    // Use results.sym if symbol state is empty (fallback)
+    const symToUse = symbol || (results?.sym as string) || "";
+    if (!symToUse || addingToWatchlist) return;
     setAddingToWatchlist(true);
+    
     try {
-      const watchlist = JSON.parse(localStorage.getItem("watchlist") || "[]");
-      const sym = symbol.toUpperCase();
-      if (!watchlist.includes(sym)) {
-        watchlist.push(sym);
-        localStorage.setItem("watchlist", JSON.stringify(watchlist));
-        setInWatchlist(true);
-        addToast(`Added ${sym} to watchlist`, "success");
-        // Trigger storage event to notify other tabs/components
-        window.dispatchEvent(new Event('storage'));
-        // Also trigger custom event for same-tab updates
-        window.dispatchEvent(new CustomEvent('watchlistUpdated', { detail: { symbol: sym, action: 'add' } }));
-      } else {
-        addToast(`${sym} is already in watchlist`, "info");
+      const sym = symToUse.toUpperCase().trim();
+      if (!sym) {
+        addToast("Invalid symbol", "error");
+        setAddingToWatchlist(false);
+        return;
       }
-    } catch (e) {
-      addToast("Failed to add to watchlist", "error");
+      
+      // Add to backend API
+      const res = await fetch("/api/watchlist", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({ symbol: sym }),
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        if (res.status === 400 && errorData.detail?.includes("already")) {
+          addToast(`${sym} is already in watchlist`, "info");
+          await checkWatchlistStatus(); // Refresh status
+          setAddingToWatchlist(false);
+          return;
+        }
+        throw new Error(errorData.detail || "Failed to add to watchlist");
+      }
+
+      setInWatchlist(true);
+      addToast(`Added ${sym} to watchlist`, "success");
+      
+      // Trigger custom event for same-tab updates
+      window.dispatchEvent(new CustomEvent('watchlistUpdated', { 
+        detail: { symbol: sym, action: 'add' } 
+      }));
+    } catch (e: any) {
+      console.error("Error adding to watchlist:", e);
+      addToast(e.message || "Failed to add to watchlist", "error");
     } finally {
       setAddingToWatchlist(false);
     }
@@ -334,20 +400,11 @@ Summarize technical outlook, momentum, and risk in 5 sentences.
         return;
       }
 
-      // Format chart data properly for My Assets
-      const formattedChart = results.chartData?.map((d: any) => ({
-        date: d.date,
-        price: typeof d.price === 'number' ? d.price : parseFloat(d.price) || 0,
-      })) || stockData.chart?.map((d: any) => ({
-        date: d.date,
-        price: typeof d.price === 'number' ? d.price : parseFloat(d.price) || 0,
-      })) || [];
-
       const asset = {
         symbol: sym,
         name: stockData.name || sym,
         price: results.snapshot.close || results.snapshot.open || stockData.price,
-        chart: formattedChart,
+        chart: results.chartData || stockData.chart || [],
         aiInsight: results.aiInsight || "",
         aiRating: "",
         aiNews: "",
