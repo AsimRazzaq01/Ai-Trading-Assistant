@@ -1,9 +1,99 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTheme } from '@/context/ThemeContext'
 
 type Row = { symbol: string; name?: string; price?: number|null; changePct?: number|null }
+
+// Stock Item Component with ripple effect
+const StockItem = ({ 
+  row, 
+  onClick, 
+  theme 
+}: { 
+  row: Row; 
+  onClick: (symbol: string) => void; 
+  theme: string;
+}) => {
+  const [ripple, setRipple] = useState<{ x: number; y: number } | null>(null);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
+  const handleClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    // Clear existing timeout
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+    
+    setRipple({ x, y });
+    timeoutRef.current = setTimeout(() => {
+      setRipple(null);
+      timeoutRef.current = null;
+    }, 400);
+    
+    onClick(row.symbol);
+  };
+  
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
+
+  return (
+    <div 
+      onClick={handleClick}
+      className={`relative flex items-center justify-between text-sm cursor-pointer transition-colors duration-150 rounded-lg p-2 overflow-hidden group/item ${
+        theme === 'dark'
+          ? 'hover:bg-white/5 border border-transparent'
+          : 'hover:bg-white/60 border border-transparent'
+      } will-change-transform`}
+      style={{ transform: 'translateZ(0)' }}
+    >
+      {/* Ripple effect */}
+      {ripple && (
+        <span
+          className={`absolute rounded-full pointer-events-none ${
+            theme === 'dark' ? 'bg-white/20' : 'bg-gray-400/20'
+          }`}
+          style={{
+            left: ripple.x,
+            top: ripple.y,
+            width: 0,
+            height: 0,
+            transform: 'translate(-50%, -50%) translateZ(0)',
+            animation: 'ripple 0.4s ease-out',
+            willChange: 'width, height, opacity',
+          }}
+        />
+      )}
+      
+      {/* Border glow on hover - simplified for performance */}
+      <div className={`absolute inset-0 rounded-lg opacity-0 group-hover/item:opacity-100 transition-opacity duration-150 ${
+        (row.changePct ?? 0) >= 0
+          ? 'bg-green-500/5'
+          : 'bg-red-500/5'
+      } pointer-events-none will-change-opacity`} />
+      
+      <div className="relative flex items-center gap-2 z-10">
+        <span className="font-mono font-semibold">{row.symbol}</span>
+        <span className="opacity-70">{row.name?.slice(0,28)}</span>
+      </div>
+      <div className="relative text-right z-10">
+        <div className="opacity-80">${(row.price ?? 0).toFixed(2)}</div>
+        <div className={`transition-all duration-300 ${(row.changePct ?? 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+          {(row.changePct ?? 0) >= 0 ? '+' : ''}{(row.changePct ?? 0).toFixed(2)}%
+        </div>
+      </div>
+    </div>
+  );
+};
 
 export default function MarketOverview() {
   const { theme } = useTheme();
@@ -29,67 +119,47 @@ export default function MarketOverview() {
   }
   
   const List = ({ title, items }: { title: string; items: Row[] }) => {
-    const [expanded, setExpanded] = useState(false)
     // Ensure we show all items (up to 50)
     const displayItems = items.slice(0, 50);
     
     return (
-      <div className={`h-full flex flex-col rounded-xl transition-all duration-300 overflow-hidden ${
+      <div className={`h-full flex flex-col rounded-xl transition-shadow duration-200 overflow-hidden relative group ${
         theme === 'dark'
-          ? 'bg-gray-900 border border-gray-800 shadow-md'
-          : 'bg-[#eaf5f3] border border-[#cde3dd] shadow-sm'
-      }`}>
-        <div className={`flex items-center justify-between px-4 py-3 border-b ${
-          theme === 'dark' ? 'border-gray-700' : 'border-gray-300'
-        }`}>
+          ? 'glass-dark bg-gray-900/40 backdrop-blur-md border border-white/10 shadow-lg'
+          : 'glass-light bg-white/30 backdrop-blur-md border border-gray-200/50 shadow-md'
+      } hover:shadow-xl will-change-shadow`}
+      style={{ transform: 'translateZ(0)', contain: 'layout style paint' }}>
+        {/* Glow effect on hover */}
+        <div className={`absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 ${
+          theme === 'dark'
+            ? 'bg-gradient-to-br from-blue-500/10 via-purple-500/5 to-transparent'
+            : 'bg-gradient-to-br from-blue-200/20 via-purple-200/10 to-transparent'
+        } pointer-events-none will-change-opacity`} />
+        
+        <div className={`relative flex items-center justify-between px-4 py-3 border-b ${
+          theme === 'dark' ? 'border-white/10' : 'border-gray-300/50'
+        }`}
+        style={{ contain: 'layout style paint' }}>
           <h3 className={`text-base font-semibold ${
             theme === 'dark' ? 'text-white' : 'text-gray-900'
           }`}>{title}</h3>
-          <button
-            onClick={() => setExpanded(v => !v)}
-            className={`text-xs px-3 py-1 rounded-lg transition-all ${
-              theme === 'dark'
-                ? 'bg-gray-800 hover:bg-gray-700 border border-gray-700 text-white'
-                : 'bg-white hover:bg-gray-50 border border-gray-300 text-gray-900'
-            }`}
-            aria-expanded={expanded}
-          >
-            {expanded ? 'Collapse' : 'Expand'}
-          </button>
         </div>
-        <div className={[
-          'relative flex-1 overflow-auto',
-          expanded ? 'max-h-[72vh]' : 'max-h-[500px]'
-        ].join(' ')}>
+        <div className="relative flex-1 overflow-auto max-h-[72vh] will-change-scroll">
           <div className="p-4 space-y-2">
             {displayItems.map(r => (
-              <div 
-                key={r.symbol} 
-                onClick={() => handleStockClick(r.symbol)}
-                className={`flex items-center justify-between text-sm cursor-pointer transition-all rounded-lg p-2 ${
-                  theme === 'dark'
-                    ? 'hover:bg-gray-800'
-                    : 'hover:bg-white'
-                }`}
-              >
-                <div className="flex items-center gap-2">
-                  <span className="font-mono font-semibold">{r.symbol}</span>
-                  <span className="opacity-70">{r.name?.slice(0,28)}</span>
-                </div>
-                <div className="text-right">
-                  <div className="opacity-80">${(r.price ?? 0).toFixed(2)}</div>
-                  <div className={(r.changePct ?? 0) >= 0 ? 'text-green-400' : 'text-red-400'}>
-                    {(r.changePct ?? 0) >= 0 ? '+' : ''}{(r.changePct ?? 0).toFixed(2)}%
-                  </div>
-                </div>
-              </div>
+              <StockItem 
+                key={r.symbol}
+                row={r}
+                onClick={handleStockClick}
+                theme={theme}
+              />
             ))}
             {!displayItems.length && <div className={`text-sm ${
               theme === 'dark' ? 'opacity-60 text-gray-400' : 'opacity-60 text-gray-600'
             }`}>No data.</div>}
           </div>
-          {/* Fade hint when collapsed */}
-          {!expanded && displayItems.length > 0 && (
+          {/* Fade hint when scrolled */}
+          {displayItems.length > 10 && (
             <div className={`pointer-events-none absolute bottom-0 left-0 right-0 h-10 bg-gradient-to-t ${
               theme === 'dark' ? 'from-gray-900/40' : 'from-[#eaf5f3]/40'
             } to-transparent`} />
@@ -100,13 +170,13 @@ export default function MarketOverview() {
   }
   
   return (
-    <div className="grid gap-6 md:grid-cols-2">
-      {err && <div className={`p-4 rounded-xl text-red-300 text-sm ${
+    <>
+      {err && <div className={`md:col-span-3 p-4 rounded-xl text-red-300 text-sm ${
         theme === 'dark' ? 'bg-gray-900 border border-gray-800' : 'bg-red-50 border border-red-200'
       }`}>Market data error: {err}</div>}
       <List title="Top Gainers" items={gainers} />
       <List title="Top Losers"  items={losers} />
-    </div>
+    </>
   )
 }
 

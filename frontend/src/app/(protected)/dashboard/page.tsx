@@ -21,29 +21,9 @@ export default function DashboardPage() {
       <div
         className={`max-w-7xl mx-auto p-6 grid gap-6 md:grid-cols-3 pt-24 transition-colors duration-500`}
       >
-        {/* Left: Top Performing Stocks */}
-        <section className="md:col-span-2 space-y-4">
-          <h2
-            className={`text-2xl font-semibold mb-4 ${
-              theme === 'dark' ? 'text-white' : 'text-gray-900'
-            }`}
-          >
-            Top Performing Stocks
-          </h2>
-          <MarketOverview />
-        </section>
-
-        {/* Right: Latest Market News */}
-        <aside className="md:col-span-1 space-y-4">
-          <h2
-            className={`text-2xl font-semibold mb-4 ${
-              theme === 'dark' ? 'text-white' : 'text-gray-900'
-            }`}
-          >
-            Latest Market News
-          </h2>
-          <NewsFeed />
-        </aside>
+        {/* Three Equal Columns: Top Gainers, Top Losers, Market News */}
+        <MarketOverview />
+        <NewsFeed />
       </div>
     </main>
   );

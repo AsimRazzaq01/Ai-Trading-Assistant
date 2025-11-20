@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useTheme } from "@/context/ThemeContext";
 import { useSearchParams } from "next/navigation";
-import { Bookmark, Plus, Check } from "lucide-react";
+import { Bookmark, Plus, Check, Download, TrendingUp, TrendingDown, AlertCircle } from "lucide-react";
 import {
   LineChart,
   Line,
@@ -13,6 +13,8 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { fetchStockData } from "@/lib/fetchStockData";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 
 /* Spinner + Toast helpers */
 function Spinner() {
@@ -74,6 +76,10 @@ export default function DeepResearchContent() {
   const [addingToWatchlist, setAddingToWatchlist] = useState(false);
   const [addingToAssets, setAddingToAssets] = useState(false);
   const [addingToPatternTrends, setAddingToPatternTrends] = useState(false);
+  const [newsData, setNewsData] = useState<any[]>([]);
+  const [confidence, setConfidence] = useState<number>(0);
+  const [strategies, setStrategies] = useState<any[]>([]);
+  const reportRef = useRef<HTMLDivElement>(null);
 
   // Load user info
   useEffect(() => {
@@ -192,10 +198,10 @@ export default function DeepResearchContent() {
 
       const chartData = ohlc.map((d: any) => ({
         date: new Date(d.t).toLocaleDateString(),
-        price: d.c,
-        h: d.h,
-        l: d.l,
-        o: d.o,
+        price: Number(d.c) || 0,
+        h: Number(d.h) || 0,
+        l: Number(d.l) || 0,
+        o: Number(d.o) || 0,
       }));
 
       // 2️⃣ Pattern Detection
@@ -220,14 +226,38 @@ export default function DeepResearchContent() {
         }
       }
 
-      // 4️⃣ AI Technical Summary
+      // 4️⃣ Fetch Latest News
+      let newsItems: any[] = [];
+      try {
+        const newsRes = await fetch(`/api/news?tickers=${sym}&limit=5`);
+        if (newsRes.ok) {
+          const newsJson = await newsRes.json();
+          newsItems = newsJson.items || [];
+        }
+      } catch (e) {
+        console.error("News fetch error:", e);
+      }
+
+      // 5️⃣ Enhanced AI Technical Summary with structured format (concise)
       const aiPrompt = `
-Analyze ${sym}'s last ${chartRange}-day performance.
-Pattern detected: ${patternText}.
-Summarize technical outlook, momentum, and risk in 5 sentences.
+Analyze ${sym}'s last ${chartRange}-day performance in 3-4 key bullet points.
+Pattern: ${patternText}
+Price: $${snapshot.close?.toFixed(2)} (H: $${snapshot.high?.toFixed(2)}, L: $${snapshot.low?.toFixed(2)})
+
+Provide a SHORT, concise analysis with:
+- 📈 Trend direction & strength (1 line)
+- 🎯 Key support/resistance levels (1 line)
+- ⚠️ Risk assessment (1 line)
+- 📊 Key takeaway (1 line)
+
+Keep each point to ONE sentence. Use emojis: 📈 bullish, 📉 bearish, ⚠️ risk, 🎯 targets, 📊 metrics.
+Maximum 150 words total.
       `;
       
       let aiInsight = "AI insight unavailable.";
+      let confidenceScore = 70; // Default confidence
+      let strategyOptions: any[] = [];
+      
       if (openAiKey) {
         try {
           const aiRes = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -239,22 +269,95 @@ Summarize technical outlook, momentum, and risk in 5 sentences.
             body: JSON.stringify({
               model: "gpt-4o-mini",
               messages: [
-                { role: "system", content: "You are a concise market analyst." },
+                { role: "system", content: "You are an expert technical analyst. Provide SHORT, concise bullet points (max 4 points). Be brief and actionable. Use emojis for visual indicators." },
                 { role: "user", content: aiPrompt },
               ],
               max_tokens: 200,
+              temperature: 0.3,
             }),
           });
           const aiJson = await aiRes.json();
           aiInsight = aiJson.choices?.[0]?.message?.content || "No AI insight available.";
+          
+          // Calculate confidence based on data quality and pattern detection
+          if (ohlc.length >= 30) confidenceScore += 10;
+          if (patternText !== "No clear pattern detected") confidenceScore += 10;
+          if (snapshot.open && snapshot.close) confidenceScore += 10;
+          confidenceScore = Math.min(95, confidenceScore);
+
+          // Generate Strategy Options
+          const strategyPrompt = `
+Based on the following analysis for ${sym}:
+- Pattern: ${patternText}
+- Current Price: $${snapshot.close?.toFixed(2)}
+- Trend: ${aiInsight.includes("bullish") ? "Bullish" : aiInsight.includes("bearish") ? "Bearish" : "Neutral"}
+
+Provide 3-5 trading strategy options/opportunities. Format your response as a JSON object with a "strategies" array:
+{
+  "strategies": [
+    {
+      "strategy": "Strategy Name",
+      "type": "long|short|neutral",
+      "entry": "Entry price or condition",
+      "target": "Target price",
+      "stop": "Stop loss price",
+      "confidence": "high|medium|low",
+      "description": "Brief description"
+    }
+  ]
+}
+          `;
+
+          try {
+            const strategyRes = await fetch("https://api.openai.com/v1/chat/completions", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${openAiKey}`,
+              },
+              body: JSON.stringify({
+                model: "gpt-4o-mini",
+                messages: [
+                  { role: "system", content: "You are a trading strategy expert. Provide structured JSON object responses with a 'strategies' array." },
+                  { role: "user", content: strategyPrompt },
+                ],
+                max_tokens: 800,
+                temperature: 0.3,
+                response_format: { type: "json_object" },
+              }),
+            });
+            const strategyJson = await strategyRes.json();
+            const strategyText = strategyJson.choices?.[0]?.message?.content || "{}";
+            try {
+              const parsed = JSON.parse(strategyText);
+              // Handle both array and object responses
+              if (Array.isArray(parsed)) {
+                strategyOptions = parsed;
+              } else if (parsed.strategies && Array.isArray(parsed.strategies)) {
+                strategyOptions = parsed.strategies;
+              } else if (parsed.data && Array.isArray(parsed.data)) {
+                strategyOptions = parsed.data;
+              } else {
+                strategyOptions = [];
+              }
+            } catch {
+              // Fallback if parsing fails
+              strategyOptions = [];
+            }
+          } catch (e) {
+            console.error("Strategy generation error:", e);
+          }
         } catch (e) {
           console.error("AI error:", e);
         }
       }
 
-      // 5️⃣ Save all results at once
+      // 6️⃣ Save all results at once
       setSymbol(sym); // Ensure symbol state is set
       setResults({ sym, chartData, snapshot, patternText, aiInsight });
+      setNewsData(newsItems);
+      setConfidence(confidenceScore);
+      setStrategies(strategyOptions);
       addToast(`Analysis for ${sym} complete.`, "success");
     } catch (err) {
       console.error(err);
@@ -532,6 +635,75 @@ Summarize technical outlook, momentum, and risk in 5 sentences.
     setSymbol("");
     setResults(null);
     setToast(null);
+    setNewsData([]);
+    setConfidence(0);
+    setStrategies([]);
+  };
+
+  // Format AI Insight into bullet points
+  const formatAIInsight = (insight: string): string[] => {
+    if (!insight) return [];
+    
+    // Split by common section headers and bullet points
+    const lines = insight.split(/\n/).filter(line => line.trim());
+    const formatted: string[] = [];
+    
+    lines.forEach(line => {
+      const trimmed = line.trim();
+      if (trimmed) {
+        // Keep section headers
+        if (trimmed.match(/^\d+\.\s+[A-Z]/) || trimmed.match(/^[A-Z][^:]+:/)) {
+          formatted.push(trimmed);
+        } else if (trimmed.startsWith("-") || trimmed.startsWith("•") || trimmed.startsWith("*")) {
+          formatted.push(trimmed);
+        } else if (trimmed.match(/^[📈📉⚠️🎯📊]/)) {
+          formatted.push(trimmed);
+        } else {
+          formatted.push(`• ${trimmed}`);
+        }
+      }
+    });
+    
+    return formatted.length > 0 ? formatted : [insight];
+  };
+
+  // Download PDF Report
+  const downloadPDF = async () => {
+    if (!reportRef.current || !results) return;
+    
+    try {
+      addToast("Generating PDF report...", "info");
+      
+      const canvas = await html2canvas(reportRef.current, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: theme === "dark" ? "#000000" : "#ffffff",
+      });
+      
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF("p", "mm", "a4");
+      const imgWidth = 210;
+      const pageHeight = 297;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      let heightLeft = imgHeight;
+      let position = 0;
+
+      pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+
+      while (heightLeft >= 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
+
+      pdf.save(`Deep-Research-${results.sym}-${new Date().toISOString().split("T")[0]}.pdf`);
+      addToast("PDF report downloaded successfully!", "success");
+    } catch (error) {
+      console.error("PDF generation error:", error);
+      addToast("Failed to generate PDF report.", "error");
+    }
   };
 
   /* ─────────────── Render ─────────────── */
@@ -624,6 +796,8 @@ Summarize technical outlook, momentum, and risk in 5 sentences.
                   : "bg-white border-gray-300 text-black"
               }`}
             >
+              <option value={1}>1 Day</option>
+              <option value={3}>3 Days</option>
               <option value={7}>7 Days</option>
               <option value={30}>30 Days</option>
               <option value={90}>90 Days</option>
@@ -702,7 +876,64 @@ Summarize technical outlook, momentum, and risk in 5 sentences.
           </p>
         ) : (
           results && (
-            <>
+            <div ref={reportRef}>
+              {/* Header with Download PDF Button */}
+              <div className="flex items-center justify-between mb-6">
+                <h2 className={`text-2xl font-bold ${
+                  theme === "dark" ? "text-white" : "text-gray-900"
+                }`}>
+                  {results.sym} — Deep Research Report
+                </h2>
+                <button
+                  onClick={downloadPDF}
+                  className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-all ${
+                    theme === "dark"
+                      ? "bg-purple-600 hover:bg-purple-700 text-white"
+                      : "bg-purple-500 hover:bg-purple-600 text-white"
+                  }`}
+                >
+                  <Download className="w-4 h-4" />
+                  Download PDF Report
+                </button>
+              </div>
+
+              {/* Confidence Bar */}
+              <div
+                className={`p-5 rounded-xl border shadow-md mb-8 ${
+                  theme === "dark"
+                    ? "bg-gray-900 border-gray-700"
+                    : "bg-[#eaf5f3] border-[#cde3dd]"
+                }`}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className={`text-lg font-semibold ${
+                    theme === "dark" ? "text-white" : "text-gray-900"
+                  }`}>
+                    Analysis Confidence
+                  </h3>
+                  <span className={`text-lg font-bold ${
+                    confidence >= 80 ? "text-green-500" : confidence >= 60 ? "text-yellow-500" : "text-orange-500"
+                  }`}>
+                    {confidence}%
+                  </span>
+                </div>
+                <div className={`h-3 rounded-full overflow-hidden ${
+                  theme === "dark" ? "bg-gray-700" : "bg-gray-200"
+                }`}>
+                  <div
+                    className={`h-full transition-all duration-500 ${
+                      confidence >= 80 ? "bg-green-500" : confidence >= 60 ? "bg-yellow-500" : "bg-orange-500"
+                    }`}
+                    style={{ width: `${confidence}%` }}
+                  />
+                </div>
+                <p className={`text-xs mt-2 opacity-75 ${
+                  theme === "dark" ? "text-gray-400" : "text-gray-600"
+                }`}>
+                  Based on data quality, pattern detection, and technical analysis
+                </p>
+              </div>
+
               {/* Snapshot */}
               <div
                 className={`p-5 rounded-xl border shadow-md mb-8 ${
@@ -843,22 +1074,228 @@ Summarize technical outlook, momentum, and risk in 5 sentences.
                 }`}>{results.patternText}</p>
               </div>
 
-              {/* AI Insight */}
+              {/* Latest News Synopsis */}
+              {newsData.length > 0 && (
+                <div
+                  className={`p-5 rounded-xl border shadow-md mb-8 ${
+                    theme === "dark"
+                      ? "bg-gray-800 border-gray-700"
+                      : "bg-[#eaf5f3] border-[#cde3dd]"
+                  }`}
+                >
+                  <h2 className={`text-lg font-semibold mb-4 ${
+                    theme === "dark" ? "text-white" : "text-gray-900"
+                  }`}>
+                    Latest News Synopsis
+                  </h2>
+                  <div className="space-y-4">
+                    {newsData.slice(0, 3).map((news: any, idx: number) => (
+                      <div
+                        key={idx}
+                        className={`p-4 rounded-lg border ${
+                          theme === "dark"
+                            ? "bg-gray-900 border-gray-700"
+                            : "bg-white border-gray-200"
+                        }`}
+                      >
+                        <h3 className={`font-semibold mb-2 ${
+                          theme === "dark" ? "text-white" : "text-gray-900"
+                        }`}>
+                          {news.title}
+                        </h3>
+                        {news.summary && (
+                          <p className={`text-sm mb-2 ${
+                            theme === "dark" ? "text-gray-300" : "text-gray-700"
+                          }`}>
+                            {news.summary.length > 200 ? `${news.summary.substring(0, 200)}...` : news.summary}
+                          </p>
+                        )}
+                        <div className="flex items-center justify-between text-xs">
+                          <span className={`opacity-75 ${
+                            theme === "dark" ? "text-gray-400" : "text-gray-600"
+                          }`}>
+                            {news.source} • {news.publishedAt ? new Date(news.publishedAt).toLocaleDateString() : ""}
+                          </span>
+                          {news.url && (
+                            <a
+                              href={news.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className={`text-blue-500 hover:underline ${
+                                theme === "dark" ? "text-blue-400" : "text-blue-600"
+                              }`}
+                            >
+                              Read more →
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Strategy Options/Opportunities */}
+              {strategies && strategies.length > 0 && (
+                <div
+                  className={`p-5 rounded-xl border shadow-md mb-8 ${
+                    theme === "dark"
+                      ? "bg-gray-800 border-gray-700"
+                      : "bg-[#eaf5f3] border-[#cde3dd]"
+                  }`}
+                >
+                  <h2 className={`text-lg font-semibold mb-4 ${
+                    theme === "dark" ? "text-white" : "text-gray-900"
+                  }`}>
+                    Strategy Options & Opportunities
+                  </h2>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    {strategies.map((strategy: any, idx: number) => (
+                      <div
+                        key={idx}
+                        className={`p-4 rounded-lg border ${
+                          strategy.type === "long" || strategy.type === "bullish"
+                            ? theme === "dark"
+                              ? "bg-green-900/30 border-green-700"
+                              : "bg-green-50 border-green-200"
+                            : strategy.type === "short" || strategy.type === "bearish"
+                            ? theme === "dark"
+                              ? "bg-red-900/30 border-red-700"
+                              : "bg-red-50 border-red-200"
+                            : theme === "dark"
+                            ? "bg-gray-900 border-gray-700"
+                            : "bg-white border-gray-200"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <h3 className={`font-semibold flex items-center gap-2 ${
+                            theme === "dark" ? "text-white" : "text-gray-900"
+                          }`}>
+                            {strategy.type === "long" || strategy.type === "bullish" ? (
+                              <TrendingUp className="w-4 h-4 text-green-500" />
+                            ) : strategy.type === "short" || strategy.type === "bearish" ? (
+                              <TrendingDown className="w-4 h-4 text-red-500" />
+                            ) : (
+                              <AlertCircle className="w-4 h-4 text-yellow-500" />
+                            )}
+                            {strategy.strategy || `Strategy ${idx + 1}`}
+                          </h3>
+                          <span className={`text-xs px-2 py-1 rounded-full ${
+                            strategy.confidence === "high"
+                              ? "bg-green-500/20 text-green-500"
+                              : strategy.confidence === "medium"
+                              ? "bg-yellow-500/20 text-yellow-500"
+                              : "bg-orange-500/20 text-orange-500"
+                          }`}>
+                            {strategy.confidence || "medium"} confidence
+                          </span>
+                        </div>
+                        {strategy.description && (
+                          <p className={`text-sm mb-3 ${
+                            theme === "dark" ? "text-gray-300" : "text-gray-700"
+                          }`}>
+                            {strategy.description}
+                          </p>
+                        )}
+                        <div className="space-y-1 text-sm">
+                          {strategy.entry && (
+                            <div className={`flex justify-between ${
+                              theme === "dark" ? "text-gray-300" : "text-gray-700"
+                            }`}>
+                              <span className="opacity-75">Entry:</span>
+                              <span className="font-semibold">{strategy.entry}</span>
+                            </div>
+                          )}
+                          {strategy.target && (
+                            <div className={`flex justify-between ${
+                              theme === "dark" ? "text-green-400" : "text-green-600"
+                            }`}>
+                              <span className="opacity-75">Target:</span>
+                              <span className="font-semibold">{strategy.target}</span>
+                            </div>
+                          )}
+                          {strategy.stop && (
+                            <div className={`flex justify-between ${
+                              theme === "dark" ? "text-red-400" : "text-red-600"
+                            }`}>
+                              <span className="opacity-75">Stop Loss:</span>
+                              <span className="font-semibold">{strategy.stop}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* AI Insight with Bullet Points - Improved Visual Design */}
               <div
-                className={`p-5 rounded-xl border shadow-md mb-8 ${
+                className={`p-6 rounded-xl border shadow-md mb-8 ${
                   theme === "dark"
-                    ? "bg-gray-800 border-gray-700"
-                    : "bg-[#eaf5f3] border-[#cde3dd]"
+                    ? "bg-gradient-to-br from-gray-800 to-gray-900 border-gray-700"
+                    : "bg-gradient-to-br from-[#eaf5f3] to-white border-[#cde3dd]"
                 }`}
               >
-                <h2 className={`text-lg font-semibold mb-2 ${
-                  theme === "dark" ? "text-white" : "text-gray-900"
-                }`}>AI Technical Insight</h2>
-                <p className={`text-sm whitespace-pre-line leading-relaxed ${
-                  theme === "dark" ? "text-gray-300" : "text-gray-700"
-                }`}>
-                  {results.aiInsight}
-                </p>
+                <div className="flex items-center gap-2 mb-4">
+                  <div className={`w-1 h-6 rounded-full ${
+                    theme === "dark" ? "bg-blue-500" : "bg-blue-600"
+                  }`} />
+                  <h2 className={`text-lg font-bold ${
+                    theme === "dark" ? "text-white" : "text-gray-900"
+                  }`}>AI Technical Insight</h2>
+                </div>
+                <div className="space-y-3 pl-2">
+                  {formatAIInsight(results.aiInsight).slice(0, 6).map((line, idx) => {
+                    const isHeader = line.match(/^\d+\.\s+[A-Z]/) || line.match(/^[A-Z][^:]+:/);
+                    const isBullish = line.includes("📈") || line.toLowerCase().includes("bullish") || line.toLowerCase().includes("up");
+                    const isBearish = line.includes("📉") || line.toLowerCase().includes("bearish") || line.toLowerCase().includes("down");
+                    const isWarning = line.includes("⚠️") || line.toLowerCase().includes("warning") || line.toLowerCase().includes("risk");
+                    const isTarget = line.includes("🎯") || line.toLowerCase().includes("target") || line.toLowerCase().includes("support") || line.toLowerCase().includes("resistance");
+                    const isMetric = line.includes("📊") || line.toLowerCase().includes("volume") || line.toLowerCase().includes("momentum");
+                    
+                    // Skip headers if they're too generic
+                    if (isHeader && line.length < 20 && idx > 0) return null;
+                    
+                    const cleanLine = line.replace(/^[📈📉⚠️🎯📊•\-\*]\s*/, "").replace(/^\d+\.\s*/, "").trim();
+                    if (!cleanLine) return null;
+                    
+                    return (
+                      <div
+                        key={idx}
+                        className={`flex items-start gap-3 p-3 rounded-lg transition-all ${
+                          theme === "dark"
+                            ? isBullish ? "bg-green-900/20 border border-green-800/30" :
+                            isBearish ? "bg-red-900/20 border border-red-800/30" :
+                            isWarning ? "bg-yellow-900/20 border border-yellow-800/30" :
+                            isTarget ? "bg-purple-900/20 border border-purple-800/30" :
+                            "bg-gray-800/50 border border-gray-700/30"
+                            : isBullish ? "bg-green-50 border border-green-200" :
+                            isBearish ? "bg-red-50 border border-red-200" :
+                            isWarning ? "bg-yellow-50 border border-yellow-200" :
+                            isTarget ? "bg-purple-50 border border-purple-200" :
+                            "bg-white border border-gray-200"
+                        }`}
+                      >
+                        <span className={`text-xl flex-shrink-0 mt-0.5 ${
+                          isBullish ? "text-green-500" :
+                          isBearish ? "text-red-500" :
+                          isWarning ? "text-yellow-500" :
+                          isTarget ? "text-purple-500" :
+                          isMetric ? "text-blue-500" :
+                          theme === "dark" ? "text-gray-500" : "text-gray-400"
+                        }`}>
+                          {isBullish ? "📈" : isBearish ? "📉" : isWarning ? "⚠️" : isTarget ? "🎯" : isMetric ? "📊" : "•"}
+                        </span>
+                        <span className={`text-sm leading-relaxed flex-1 ${
+                          theme === "dark" ? "text-gray-200" : "text-gray-800"
+                        } ${isHeader ? "font-semibold" : ""}`}>
+                          {cleanLine}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
 
               {/* Chart */}
@@ -889,6 +1326,8 @@ Summarize technical outlook, momentum, and risk in 5 sentences.
                           (dataMax: number) => dataMax * 1.02,
                         ]}
                         tick={{ fill: theme === "dark" ? "#ccc" : "#333", fontSize: 10 }}
+                        tickFormatter={(value: number) => `$${value.toFixed(2)}`}
+                        width={80}
                       />
                       <Tooltip
                         contentStyle={{
@@ -909,7 +1348,7 @@ Summarize technical outlook, momentum, and risk in 5 sentences.
                   </ResponsiveContainer>
                 </div>
               </div>
-            </>
+            </div>
           )
         )}
       </div>

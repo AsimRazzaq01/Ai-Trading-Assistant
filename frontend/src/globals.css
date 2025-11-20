@@ -28,15 +28,68 @@ html, body, :root {
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+/* Glass morphism dark theme - optimized */
+.glass-dark {
+  background: rgba(17, 24, 39, 0.4);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  will-change: transform;
+  transform: translateZ(0);
+}
+
+/* Glass morphism light theme - optimized */
+.glass-light {
+  background: rgba(255, 255, 255, 0.3);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  will-change: transform;
+  transform: translateZ(0);
+}
+
 /* Card utility */
 .card {
   background: var(--card);
   transition: background 0.4s ease;
 }
 
-/* Smooth transitions */
+/* Smooth transitions - optimized for performance */
 * {
-  transition-property: background-color, border-color, color, fill, stroke;
+  transition-property: background-color, border-color, color, fill, stroke, opacity;
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   transition-duration: 150ms;
+}
+
+/* Optimize rendering for animations - only when motion is preferred */
+@media (prefers-reduced-motion: no-preference) {
+  .will-change-transform {
+    will-change: transform;
+  }
+  
+  .will-change-opacity {
+    will-change: opacity;
+  }
+  
+  .will-change-shadow {
+    will-change: box-shadow;
+  }
+  
+  .will-change-scroll {
+    will-change: scroll-position;
+  }
+}
+
+/* Ripple animation - optimized */
+@keyframes ripple {
+  0% {
+    width: 0;
+    height: 0;
+    opacity: 0.8;
+  }
+  100% {
+    width: 200px;
+    height: 200px;
+    opacity: 0;
+  }
 }

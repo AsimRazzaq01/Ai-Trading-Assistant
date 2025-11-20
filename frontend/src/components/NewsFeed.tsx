@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useTheme } from '@/context/ThemeContext'
 import NewsAnalysisModal from './NewsAnalysisModal'
 
@@ -12,11 +12,133 @@ type Item = {
   summary?: string
 }
 
+// News Item Component with ripple effect
+const NewsItem = ({ 
+  item, 
+  onClick, 
+  theme 
+}: { 
+  item: Item; 
+  onClick: (item: Item) => void; 
+  theme: string;
+}) => {
+  const [ripple, setRipple] = useState<{ x: number; y: number } | null>(null);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
+  const handleClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    // Clear existing timeout
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+    
+    setRipple({ x, y });
+    timeoutRef.current = setTimeout(() => {
+      setRipple(null);
+      timeoutRef.current = null;
+    }, 400);
+    
+    onClick(item);
+  };
+  
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
+
+  return (
+    <div
+      onClick={handleClick}
+      className={`relative block rounded-xl p-3 border transition-colors duration-150 cursor-pointer overflow-hidden group/item ${
+        theme === 'dark'
+          ? 'hover:bg-white/5 border-white/10'
+          : 'hover:bg-white/60 border-gray-300/50'
+      } will-change-transform`}
+      style={{ transform: 'translateZ(0)' }}
+    >
+      {/* Ripple effect */}
+      {ripple && (
+        <span
+          className={`absolute rounded-full pointer-events-none ${
+            theme === 'dark' ? 'bg-white/20' : 'bg-gray-400/20'
+          }`}
+          style={{
+            left: ripple.x,
+            top: ripple.y,
+            width: 0,
+            height: 0,
+            transform: 'translate(-50%, -50%) translateZ(0)',
+            animation: 'ripple 0.4s ease-out',
+            willChange: 'width, height, opacity',
+          }}
+        />
+      )}
+      
+      {/* Border glow on hover - simplified for performance */}
+      <div className={`absolute inset-0 rounded-xl opacity-0 group-hover/item:opacity-100 transition-opacity duration-150 ${
+        theme === 'dark'
+          ? 'bg-blue-500/5'
+          : 'bg-blue-200/10'
+      } pointer-events-none will-change-opacity`} />
+      
+      <div className="relative flex gap-3 z-10">
+        {item.image ? (
+          <img
+            src={item.image}
+            alt=""
+            className="w-16 h-16 object-cover rounded-md flex-shrink-0"
+          />
+        ) : (
+          <div className={`w-16 h-16 rounded-md flex items-center justify-center text-xs ${
+            theme === 'dark'
+              ? 'bg-gray-800 border border-gray-700 opacity-60'
+              : 'bg-gray-100 border border-gray-300 opacity-60'
+          }`}>
+            News
+          </div>
+        )}
+        <div className="min-w-0 flex-1">
+          <div className={`text-sm font-medium line-clamp-2 ${
+            theme === 'dark' ? 'text-white' : 'text-gray-900'
+          }`}>{item.title}</div>
+          <div className={`text-xs mt-0.5 ${
+            theme === 'dark' ? 'opacity-70 text-gray-400' : 'opacity-70 text-gray-600'
+          }`}>
+            {item.source ? `${item.source} • ` : ''}
+            {item.publishedAt ? new Date(item.publishedAt).toLocaleString() : ''}
+          </div>
+          {item.summary && (
+            <div className={`text-xs mt-1 line-clamp-2 ${
+              theme === 'dark' ? 'opacity-80 text-gray-300' : 'opacity-80 text-gray-700'
+            }`}>
+              {item.summary}
+            </div>
+          )}
+          <div className={`text-xs mt-2 flex items-center gap-1 transition-colors duration-300 ${
+            theme === 'dark' ? 'text-blue-400 group-hover/item:text-blue-300' : 'text-blue-600 group-hover/item:text-blue-700'
+          }`}>
+            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            </svg>
+            Click for AI Analysis
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export default function NewsFeed({ q }: { q?: string }) {
   const { theme } = useTheme();
   const [items, setItems] = useState<Item[]>([])
   const [err, setErr] = useState<string | null>(null)
-  const [expanded, setExpanded] = useState(false)
   const [selectedNews, setSelectedNews] = useState<Item | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
 
@@ -35,38 +157,29 @@ export default function NewsFeed({ q }: { q?: string }) {
   }, [q])
 
   return (
-    <div className={`h-full flex flex-col rounded-xl transition-all duration-300 overflow-hidden ${
+    <div className={`h-full flex flex-col rounded-xl transition-shadow duration-200 overflow-hidden relative group ${
       theme === 'dark'
-        ? 'bg-gray-900 border border-gray-800 shadow-md'
-        : 'bg-[#eaf5f3] border border-[#cde3dd] shadow-sm'
-    }`}>
+        ? 'glass-dark bg-gray-900/40 backdrop-blur-md border border-white/10 shadow-lg'
+        : 'glass-light bg-white/30 backdrop-blur-md border border-gray-200/50 shadow-md'
+    } hover:shadow-xl will-change-shadow`}
+    style={{ transform: 'translateZ(0)', contain: 'layout style paint' }}>
+      {/* Glow effect on hover */}
+      <div className={`absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 ${
+        theme === 'dark'
+          ? 'bg-gradient-to-br from-blue-500/10 via-purple-500/5 to-transparent'
+          : 'bg-gradient-to-br from-blue-200/20 via-purple-200/10 to-transparent'
+      } pointer-events-none will-change-opacity`} />
       {/* Header */}
-      <div className={`flex items-center justify-between px-4 py-3 border-b ${
-        theme === 'dark' ? 'border-gray-700' : 'border-gray-300'
+      <div className={`relative flex items-center justify-between px-4 py-3 border-b ${
+        theme === 'dark' ? 'border-white/10' : 'border-gray-300/50'
       }`}>
         <h3 className={`text-base font-semibold ${
           theme === 'dark' ? 'text-white' : 'text-gray-900'
         }`}>Market News</h3>
-        <button
-          onClick={() => setExpanded(v => !v)}
-          className={`text-xs px-3 py-1 rounded-lg transition-all ${
-            theme === 'dark'
-              ? 'bg-gray-800 hover:bg-gray-700 border border-gray-700 text-white'
-              : 'bg-white hover:bg-gray-50 border border-gray-300 text-gray-900'
-          }`}
-          aria-expanded={expanded}
-        >
-          {expanded ? 'Collapse' : 'Expand'}
-        </button>
       </div>
 
       {/* Scrollable content */}
-      <div
-        className={[
-          'relative flex-1 overflow-auto',
-          expanded ? 'max-h-[72vh]' : 'max-h-[500px]'
-        ].join(' ')}
-      >
+      <div className="relative flex-1 overflow-auto max-h-[72vh] will-change-scroll">
         <div className="p-4 space-y-3">
           {err && (
             <div className={`text-sm ${
@@ -83,71 +196,17 @@ export default function NewsFeed({ q }: { q?: string }) {
           )}
 
           {items.map((n, i) => (
-            <div
+            <NewsItem
               key={i}
-              className={`block rounded-xl p-3 border transition-all cursor-pointer ${
-                theme === 'dark'
-                  ? 'hover:bg-gray-800 border-gray-700'
-                  : 'hover:bg-white border-gray-300'
-              }`}
-              onClick={() => {
-                setSelectedNews(n)
+              item={n}
+              onClick={(item) => {
+                setSelectedNews(item)
                 setIsModalOpen(true)
               }}
-            >
-              <div className="flex gap-3">
-                {n.image ? (
-                  <img
-                    src={n.image}
-                    alt=""
-                    className="w-16 h-16 object-cover rounded-md flex-shrink-0"
-                  />
-                ) : (
-                  <div className={`w-16 h-16 rounded-md flex items-center justify-center text-xs ${
-                    theme === 'dark'
-                      ? 'bg-gray-800 border border-gray-700 opacity-60'
-                      : 'bg-gray-100 border border-gray-300 opacity-60'
-                  }`}>
-                    News
-                  </div>
-                )}
-                <div className="min-w-0 flex-1">
-                  <div className={`text-sm font-medium line-clamp-2 ${
-                    theme === 'dark' ? 'text-white' : 'text-gray-900'
-                  }`}>{n.title}</div>
-                  <div className={`text-xs mt-0.5 ${
-                    theme === 'dark' ? 'opacity-70 text-gray-400' : 'opacity-70 text-gray-600'
-                  }`}>
-                    {n.source ? `${n.source} • ` : ''}
-                    {n.publishedAt ? new Date(n.publishedAt).toLocaleString() : ''}
-                  </div>
-                  {n.summary && (
-                    <div className={`text-xs mt-1 line-clamp-2 ${
-                      theme === 'dark' ? 'opacity-80 text-gray-300' : 'opacity-80 text-gray-700'
-                    }`}>
-                      {n.summary}
-                    </div>
-                  )}
-                  <div className={`text-xs mt-2 flex items-center gap-1 ${
-                    theme === 'dark' ? 'text-blue-400' : 'text-blue-600'
-                  }`}>
-                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                    </svg>
-                    Click for AI Analysis
-                  </div>
-                </div>
-              </div>
-            </div>
+              theme={theme}
+            />
           ))}
         </div>
-
-        {/* Fade hint when collapsed */}
-        {!expanded && items.length > 0 && (
-          <div className={`pointer-events-none absolute bottom-0 left-0 right-0 h-10 bg-gradient-to-t ${
-            theme === 'dark' ? 'from-gray-900/40' : 'from-[#eaf5f3]/40'
-          } to-transparent`} />
-        )}
       </div>
 
       {/* News Analysis Modal */}
