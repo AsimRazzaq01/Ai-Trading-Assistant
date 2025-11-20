@@ -329,29 +329,35 @@ export default function CandlestickChart({
   const chartWidth = Math.max(containerWidth - padding.left - padding.right, 660) // Min 660px for plotting area
   const chartHeight = height - padding.top - padding.bottom
   
-  // Calculate spacing between candles - ensure minimum spacing to prevent overlap
-  // Use a more robust calculation that works for all data ranges
+  // Calculate spacing between candles - ensure proper alignment across full chart width
   const minCandleSpacing = 4 // Minimum pixels between candles (increased for better separation)
   const maxCandleWidth = 10 // Maximum candle width
   const minCandleWidth = 3 // Minimum candle width for visibility
   const availableWidth = chartWidth
   
-  // Calculate spacing: ensure candles fit within chart bounds
-  // First candle center at 0.5 * spacing, last candle center at (data.length - 0.5) * spacing
-  // Total width used: (data.length - 1) * spacing
-  // To fit within availableWidth: (data.length - 1) * spacing <= availableWidth
-  const maxSpacing = data.length > 1 ? availableWidth / (data.length - 1) : availableWidth
-  const spacingPerCandle = maxSpacing
+  // Calculate candle width first based on available space
+  let candleWidth: number
+  let candleSpacing: number
   
-  // Calculate candle width: leave space for gaps between candles
-  const calculatedWidth = spacingPerCandle - minCandleSpacing
-  const candleWidth = Math.min(maxCandleWidth, Math.max(minCandleWidth, calculatedWidth))
-  
-  // Final spacing: use spacingPerCandle which ensures candles fit within bounds
-  // First candle at padding.left + 0.5 * spacingPerCandle
-  // Last candle at padding.left + (data.length - 0.5) * spacingPerCandle
-  // This ensures: last candle center <= padding.left + availableWidth (since (data.length - 0.5) * spacingPerCandle <= (data.length - 1) * spacingPerCandle <= availableWidth)
-  const candleSpacing = spacingPerCandle
+  if (data.length === 0) {
+    candleWidth = maxCandleWidth
+    candleSpacing = maxCandleWidth + minCandleSpacing
+  } else if (data.length === 1) {
+    // Single candle: center it in the chart
+    candleWidth = Math.min(maxCandleWidth, Math.max(minCandleWidth, availableWidth * 0.1))
+    candleSpacing = availableWidth
+  } else {
+    // Multiple candles: distribute evenly across full width
+    // Calculate optimal candle width based on available space
+    const maxPossibleWidth = (availableWidth - (data.length - 1) * minCandleSpacing) / data.length
+    candleWidth = Math.min(maxCandleWidth, Math.max(minCandleWidth, maxPossibleWidth))
+    
+    // Calculate spacing to fill the entire chart width
+    // First candle center at: padding.left + candleWidth / 2
+    // Last candle center at: padding.left + chartWidth - candleWidth / 2
+    // Spacing between centers: (chartWidth - candleWidth) / (data.length - 1)
+    candleSpacing = (chartWidth - candleWidth) / (data.length - 1)
+  }
 
   // Calculate Bollinger Bands if enabled - only show in 1-day view
   const shouldShowBollingerBands = showBollingerBands && isOneDayView
@@ -1006,7 +1012,7 @@ export default function CandlestickChart({
             .filter((_, i) => i % Math.ceil(data.length / 8) === 0 || i === data.length - 1)
             .map((d, idx) => {
               const i = data.indexOf(d)
-              const x = padding.left + (i + 0.5) * candleSpacing
+              const x = padding.left + candleWidth / 2 + i * candleSpacing
               return (
                 <line
                   key={`vgrid-${i}`}
@@ -1105,8 +1111,8 @@ export default function CandlestickChart({
             <>
               {/* Upper Band */}
               <path
-                d={`M ${padding.left + (bollingerBands[0].index + 0.5) * candleSpacing},${scaleY(bollingerBands[0].upper)} ${bollingerBands.slice(1).map((bb) => {
-                  const x = padding.left + (bb.index + 0.5) * candleSpacing
+                d={`M ${padding.left + candleWidth / 2 + bollingerBands[0].index * candleSpacing},${scaleY(bollingerBands[0].upper)} ${bollingerBands.slice(1).map((bb) => {
+                  const x = padding.left + candleWidth / 2 + bb.index * candleSpacing
                   return `L ${x},${scaleY(bb.upper)}`
                 }).join(' ')}`}
                 fill="none"
@@ -1117,8 +1123,8 @@ export default function CandlestickChart({
               />
               {/* Middle Band (SMA) */}
               <path
-                d={`M ${padding.left + (bollingerBands[0].index + 0.5) * candleSpacing},${scaleY(bollingerBands[0].middle)} ${bollingerBands.slice(1).map((bb) => {
-                  const x = padding.left + (bb.index + 0.5) * candleSpacing
+                d={`M ${padding.left + candleWidth / 2 + bollingerBands[0].index * candleSpacing},${scaleY(bollingerBands[0].middle)} ${bollingerBands.slice(1).map((bb) => {
+                  const x = padding.left + candleWidth / 2 + bb.index * candleSpacing
                   return `L ${x},${scaleY(bb.middle)}`
                 }).join(' ')}`}
                 fill="none"
@@ -1129,8 +1135,8 @@ export default function CandlestickChart({
               />
               {/* Lower Band */}
               <path
-                d={`M ${padding.left + (bollingerBands[0].index + 0.5) * candleSpacing},${scaleY(bollingerBands[0].lower)} ${bollingerBands.slice(1).map((bb) => {
-                  const x = padding.left + (bb.index + 0.5) * candleSpacing
+                d={`M ${padding.left + candleWidth / 2 + bollingerBands[0].index * candleSpacing},${scaleY(bollingerBands[0].lower)} ${bollingerBands.slice(1).map((bb) => {
+                  const x = padding.left + candleWidth / 2 + bb.index * candleSpacing
                   return `L ${x},${scaleY(bb.lower)}`
                 }).join(' ')}`}
                 fill="none"
@@ -1147,11 +1153,11 @@ export default function CandlestickChart({
                 </linearGradient>
               </defs>
               <path
-                d={`M ${padding.left + (bollingerBands[0].index + 0.5) * candleSpacing},${scaleY(bollingerBands[0].upper)} ${bollingerBands.map((bb) => {
-                  const x = padding.left + (bb.index + 0.5) * candleSpacing
+                d={`M ${padding.left + candleWidth / 2 + bollingerBands[0].index * candleSpacing},${scaleY(bollingerBands[0].upper)} ${bollingerBands.map((bb) => {
+                  const x = padding.left + candleWidth / 2 + bb.index * candleSpacing
                   return `L ${x},${scaleY(bb.upper)}`
                 }).slice(1).join(' ')} ${[...bollingerBands].reverse().map((bb) => {
-                  const x = padding.left + (bb.index + 0.5) * candleSpacing
+                  const x = padding.left + candleWidth / 2 + bb.index * candleSpacing
                   return `L ${x},${scaleY(bb.lower)}`
                 }).join(' ')} Z`}
                 fill="url(#bollingerFill)"
@@ -1166,8 +1172,9 @@ export default function CandlestickChart({
               // Calculate trend line based on trend direction
               const firstPrice = data[0].close
               const lastPrice = data[data.length - 1].close
-              const firstX = padding.left
-              const lastX = chartWidth + padding.left
+              // Align with first and last candle centers
+              const firstX = padding.left + candleWidth / 2
+              const lastX = padding.left + candleWidth / 2 + (data.length - 1) * candleSpacing
               const firstY = scaleY(firstPrice)
               const lastY = scaleY(lastPrice)
               
@@ -1207,8 +1214,8 @@ export default function CandlestickChart({
               if (startIdx >= data.length || endIdx >= data.length) return null
               
               // Use the same spacing calculation as candlesticks
-              const startX = padding.left + (startIdx + 0.5) * candleSpacing
-              const endX = padding.left + (endIdx + 0.5) * candleSpacing
+              const startX = padding.left + candleWidth / 2 + startIdx * candleSpacing
+              const endX = padding.left + candleWidth / 2 + endIdx * candleSpacing
               const startY = scaleY(data[startIdx].close)
               const endY = scaleY(data[endIdx].close)
               
@@ -1265,21 +1272,21 @@ export default function CandlestickChart({
                 </linearGradient>
               </defs>
               
-              {/* Area path */}
+              {/* Area path - properly aligned to fill chart width */}
               <path
-                d={`M ${padding.left + 0.5 * candleSpacing},${scaleY(data[0].close)} ${data.map((d, i) => {
-                  const x = padding.left + (i + 0.5) * candleSpacing
+                d={`M ${padding.left + candleWidth / 2},${scaleY(data[0].close)} ${data.map((d, i) => {
+                  const x = padding.left + candleWidth / 2 + i * candleSpacing
                   const y = scaleY(d.close)
                   return `L ${x},${y}`
-                }).join(' ')} L ${padding.left + (data.length - 0.5) * candleSpacing},${padding.top + chartHeight} L ${padding.left + 0.5 * candleSpacing},${padding.top + chartHeight} Z`}
+                }).join(' ')} L ${padding.left + candleWidth / 2 + (data.length - 1) * candleSpacing},${padding.top + chartHeight} L ${padding.left + candleWidth / 2},${padding.top + chartHeight} Z`}
                 fill="url(#areaGradient)"
                 stroke="none"
               />
               
               {/* Line - TradingView style */}
               <path
-                d={`M ${padding.left + 0.5 * candleSpacing},${scaleY(data[0].close)} ${data.map((d, i) => {
-                  const x = padding.left + (i + 0.5) * candleSpacing
+                d={`M ${padding.left + candleWidth / 2},${scaleY(data[0].close)} ${data.map((d, i) => {
+                  const x = padding.left + candleWidth / 2 + i * candleSpacing
                   const y = scaleY(d.close)
                   return `L ${x},${y}`
                 }).join(' ')}`}
@@ -1294,9 +1301,11 @@ export default function CandlestickChart({
 
           {/* Candlesticks */}
           {chartType === 'candlestick' && data.map((d, i) => {
-            // Calculate x position: center each candle in its allocated space
-            // Start from padding.left, then add (i + 0.5) * spacing to center the candle
-            const x = padding.left + (i + 0.5) * candleSpacing - candleWidth / 2
+            // Calculate x position: properly aligned to fill chart width
+            // First candle center at: padding.left + candleWidth / 2
+            // Subsequent candles: padding.left + candleWidth / 2 + i * candleSpacing
+            const candleCenterX = padding.left + candleWidth / 2 + i * candleSpacing
+            const x = candleCenterX - candleWidth / 2
             const openY = scaleY(d.open)
             const closeY = scaleY(d.close)
             const highY = scaleY(d.high)
@@ -1306,7 +1315,6 @@ export default function CandlestickChart({
             const bodyBottom = Math.max(openY, closeY)
             const bodyHeight = Math.max(1, bodyBottom - bodyTop)
             const color = getCandleColor(d)
-            const candleCenterX = padding.left + (i + 0.5) * candleSpacing
 
             return (
               <g 
@@ -1353,7 +1361,7 @@ export default function CandlestickChart({
             .map((d, idx, arr) => {
               const i = data.indexOf(d)
               // Use the same spacing calculation as candlesticks
-              const x = padding.left + (i + 0.5) * candleSpacing
+              const x = padding.left + candleWidth / 2 + i * candleSpacing
               
               // Format date based on view type
               let dateLabel = ''
