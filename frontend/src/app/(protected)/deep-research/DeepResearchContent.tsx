@@ -712,7 +712,7 @@ Provide 3-5 trading strategy options/opportunities. Format your response as a JS
       className={`min-h-screen px-8 py-20 transition-colors duration-500 ${
         theme === "dark"
           ? "bg-gradient-to-b from-black via-gray-950 to-black text-white"
-          : "bg-gradient-to-b from-[#f5f7fa] via-[#c3e0dc] to-[#9ad0c2] text-gray-900"
+          : "bg-gradient-to-b from-[#f0f2f5] via-[#e8ebef] to-[#dfe3e8] text-[#2d3748]"
       }`}
     >
       {/* Toast */}
@@ -728,7 +728,7 @@ Provide 3-5 trading strategy options/opportunities. Format your response as a JS
 
       <div className="max-w-6xl mx-auto">
         <h1 className={`text-3xl font-bold mb-6 ${
-          theme === "dark" ? "text-white" : "text-gray-900"
+          theme === "dark" ? "text-white" : "text-[#2d3748]"
         }`}>Deep Research</h1>
         <p className={`mb-8 text-sm opacity-80 ${
           theme === "dark" ? "text-gray-300" : "text-gray-700"
@@ -880,7 +880,7 @@ Provide 3-5 trading strategy options/opportunities. Format your response as a JS
               {/* Header with Download PDF Button */}
               <div className="flex items-center justify-between mb-6">
                 <h2 className={`text-2xl font-bold ${
-                  theme === "dark" ? "text-white" : "text-gray-900"
+                  theme === "dark" ? "text-white" : "text-[#2d3748]"
                 }`}>
                   {results.sym} — Deep Research Report
                 </h2>
@@ -907,7 +907,7 @@ Provide 3-5 trading strategy options/opportunities. Format your response as a JS
               >
                 <div className="flex items-center justify-between mb-2">
                   <h3 className={`text-lg font-semibold ${
-                    theme === "dark" ? "text-white" : "text-gray-900"
+                    theme === "dark" ? "text-white" : "text-[#2d3748]"
                   }`}>
                     Analysis Confidence
                   </h3>
@@ -944,7 +944,7 @@ Provide 3-5 trading strategy options/opportunities. Format your response as a JS
               >
                 <div className="flex items-center justify-between mb-4">
                   <h2 className={`text-xl font-semibold ${
-                    theme === "dark" ? "text-white" : "text-gray-900"
+                    theme === "dark" ? "text-white" : "text-[#2d3748]"
                   }`}>
                     {results.sym} — Daily Snapshot
                   </h2>
@@ -1032,7 +1032,7 @@ Provide 3-5 trading strategy options/opportunities. Format your response as a JS
                       theme === "dark" ? "text-gray-400" : "text-gray-600"
                     }`}>Open</p>
                     <p className={`font-semibold ${
-                      theme === "dark" ? "text-white" : "text-gray-900"
+                      theme === "dark" ? "text-white" : "text-[#2d3748]"
                     }`}>${results.snapshot.open?.toFixed?.(2) || "N/A"}</p>
                   </div>
                   <div>
@@ -1052,7 +1052,7 @@ Provide 3-5 trading strategy options/opportunities. Format your response as a JS
                       theme === "dark" ? "text-gray-400" : "text-gray-600"
                     }`}>Close</p>
                     <p className={`font-semibold ${
-                      theme === "dark" ? "text-white" : "text-gray-900"
+                      theme === "dark" ? "text-white" : "text-[#2d3748]"
                     }`}>${results.snapshot.close?.toFixed?.(2) || "N/A"}</p>
                   </div>
                 </div>
@@ -1067,7 +1067,7 @@ Provide 3-5 trading strategy options/opportunities. Format your response as a JS
                 }`}
               >
                 <h2 className={`text-lg font-semibold mb-2 ${
-                  theme === "dark" ? "text-white" : "text-gray-900"
+                  theme === "dark" ? "text-white" : "text-[#2d3748]"
                 }`}>Detected Pattern</h2>
                 <p className={`text-sm opacity-90 ${
                   theme === "dark" ? "text-gray-300" : "text-gray-700"
@@ -1084,7 +1084,7 @@ Provide 3-5 trading strategy options/opportunities. Format your response as a JS
                   }`}
                 >
                   <h2 className={`text-lg font-semibold mb-4 ${
-                    theme === "dark" ? "text-white" : "text-gray-900"
+                    theme === "dark" ? "text-white" : "text-[#2d3748]"
                   }`}>
                     Latest News Synopsis
                   </h2>
@@ -1099,7 +1099,7 @@ Provide 3-5 trading strategy options/opportunities. Format your response as a JS
                         }`}
                       >
                         <h3 className={`font-semibold mb-2 ${
-                          theme === "dark" ? "text-white" : "text-gray-900"
+                          theme === "dark" ? "text-white" : "text-[#2d3748]"
                         }`}>
                           {news.title}
                         </h3>
@@ -1145,7 +1145,7 @@ Provide 3-5 trading strategy options/opportunities. Format your response as a JS
                   }`}
                 >
                   <h2 className={`text-lg font-semibold mb-4 ${
-                    theme === "dark" ? "text-white" : "text-gray-900"
+                    theme === "dark" ? "text-white" : "text-[#2d3748]"
                   }`}>
                     Strategy Options & Opportunities
                   </h2>
@@ -1169,7 +1169,7 @@ Provide 3-5 trading strategy options/opportunities. Format your response as a JS
                       >
                         <div className="flex items-center justify-between mb-2">
                           <h3 className={`font-semibold flex items-center gap-2 ${
-                            theme === "dark" ? "text-white" : "text-gray-900"
+                            theme === "dark" ? "text-white" : "text-[#2d3748]"
                           }`}>
                             {strategy.type === "long" || strategy.type === "bullish" ? (
                               <TrendingUp className="w-4 h-4 text-green-500" />
@@ -1242,7 +1242,7 @@ Provide 3-5 trading strategy options/opportunities. Format your response as a JS
                     theme === "dark" ? "bg-blue-500" : "bg-blue-600"
                   }`} />
                   <h2 className={`text-lg font-bold ${
-                    theme === "dark" ? "text-white" : "text-gray-900"
+                    theme === "dark" ? "text-white" : "text-[#2d3748]"
                   }`}>AI Technical Insight</h2>
                 </div>
                 <div className="space-y-3 pl-2">
@@ -1307,7 +1307,7 @@ Provide 3-5 trading strategy options/opportunities. Format your response as a JS
                 }`}
               >
                 <h2 className={`text-lg font-semibold mb-4 ${
-                  theme === "dark" ? "text-white" : "text-gray-900"
+                  theme === "dark" ? "text-white" : "text-[#2d3748]"
                 }`}>
                   {rangeMode === "custom"
                     ? `Custom Range (${customFrom} → ${customTo})`

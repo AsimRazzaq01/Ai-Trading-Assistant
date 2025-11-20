@@ -32,7 +32,7 @@ export default function FloatingWidget() {
           className={`w-14 h-14 grid place-items-center rounded-full transition-all shadow-lg ${
             theme === 'dark'
               ? 'bg-white/10 backdrop-blur-md border border-white/20 hover:bg-white/15 text-white'
-              : 'bg-white/90 backdrop-blur-md border border-gray-200 hover:bg-white text-gray-900 shadow-md'
+              : 'bg-white/90 backdrop-blur-md border border-[#2d3748]/20 hover:bg-white text-[#2d3748] shadow-md'
           }`}
           aria-label="Open quick stock widget"
         >
@@ -43,16 +43,16 @@ export default function FloatingWidget() {
         <div className={`p-4 w-80 rounded-xl shadow-xl transition-all ${
           theme === 'dark'
             ? 'bg-gray-900/95 backdrop-blur-md border border-gray-800 text-white'
-            : 'bg-white/95 backdrop-blur-md border border-gray-200 text-gray-900'
+            : 'bg-white/95 backdrop-blur-md border border-[#2d3748]/20 text-[#2d3748]'
         }`}>
           <div className="flex justify-between items-center mb-2">
             <h4 className={`font-semibold ${
-              theme === 'dark' ? 'text-white' : 'text-gray-900'
+              theme === 'dark' ? 'text-white' : 'text-[#2d3748]'
             }`}>Quick Stock Lookup</h4>
             <button 
               onClick={() => setOpen(false)} 
               className={`hover:opacity-80 transition ${
-                theme === 'dark' ? 'text-white' : 'text-gray-900'
+                theme === 'dark' ? 'text-white' : 'text-[#2d3748]'
               }`}
               aria-label="Close"
             >
@@ -67,7 +67,7 @@ export default function FloatingWidget() {
               className={`w-full px-3 py-2 rounded-lg border outline-none transition ${
                 theme === 'dark'
                   ? 'bg-gray-800/50 border-gray-700 text-white placeholder-gray-500 focus:border-gray-600'
-                  : 'bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-400 focus:border-gray-400'
+                  : 'bg-[#f0f2f5] border-[#2d3748]/20 text-[#2d3748] placeholder-gray-400 focus:border-[#2d3748]/30'
               }`}
             />
             <button

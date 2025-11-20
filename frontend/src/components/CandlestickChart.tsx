@@ -397,7 +397,7 @@ export default function CandlestickChart({
         className={`px-4 py-2 border-b flex items-center justify-between ${
           theme === 'dark' 
             ? 'border-gray-700 text-white bg-gray-900' 
-            : 'border-gray-300 text-gray-900 bg-white'
+            : 'border-[#2d3748]/20 text-[#2d3748] bg-white'
         }`}
       >
         {symbol && <h3 className="font-semibold">{symbol}</h3>}
@@ -787,7 +787,7 @@ export default function CandlestickChart({
           }`}
         >
           <div className="flex items-center justify-between mb-3">
-            <h4 className={`font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+            <h4 className={`font-semibold ${theme === 'dark' ? 'text-white' : 'text-[#2d3748]'}`}>
               Chart Colors
             </h4>
             <button
@@ -931,7 +931,7 @@ export default function CandlestickChart({
               className={`w-full mt-3 px-3 py-2 rounded text-xs font-medium transition-all ${
                 theme === 'dark'
                   ? 'bg-gray-700 hover:bg-gray-600 text-white'
-                  : 'bg-gray-200 hover:bg-gray-300 text-gray-900'
+                  : 'bg-[#e8ebef] hover:bg-[#dfe3e8] text-[#2d3748]'
               }`}
             >
               Reset to Defaults

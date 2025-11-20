@@ -97,7 +97,7 @@ export default function NewsAnalysisModal({
         formatted.push(
           <div key={index} className="mb-2">
             <strong className={`font-semibold ${
-              theme === 'dark' ? 'text-white' : 'text-gray-900'
+              theme === 'dark' ? 'text-white' : 'text-[#2d3748]'
             }`}>
               {boldMatch[1]}
             </strong>
@@ -196,7 +196,7 @@ export default function NewsAnalysisModal({
           <div className="flex-1 min-w-0">
             <h2
               className={`text-xl font-bold mb-2 ${
-                theme === 'dark' ? 'text-white' : 'text-gray-900'
+                theme === 'dark' ? 'text-white' : 'text-[#2d3748]'
               }`}
             >
               News Analysis
@@ -214,7 +214,7 @@ export default function NewsAnalysisModal({
             className={`ml-4 p-2 rounded-lg transition-all ${
               theme === 'dark'
                 ? 'hover:bg-gray-800 text-gray-400 hover:text-white'
-                : 'hover:bg-gray-100 text-gray-500 hover:text-gray-900'
+                : 'hover:bg-[#e8ebef] text-gray-500 hover:text-[#2d3748]'
             }`}
             aria-label="Close"
           >

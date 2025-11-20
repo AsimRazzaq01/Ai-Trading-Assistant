@@ -520,7 +520,7 @@ export default function MyAssetsPage() {
       className={`min-h-screen px-8 py-20 transition-colors duration-500 ${
         theme === "dark"
           ? "bg-gradient-to-b from-black via-gray-950 to-black text-white"
-          : "bg-gradient-to-b from-[#f5f7fa] via-[#c3e0dc] to-[#9ad0c2] text-gray-900"
+          : "bg-gradient-to-b from-[#f0f2f5] via-[#e8ebef] to-[#dfe3e8] text-[#2d3748]"
       }`}
     >
       {/* Toasts: top-center */}
@@ -683,7 +683,7 @@ export default function MyAssetsPage() {
                 <div className="flex justify-between items-center mb-3">
                   <div>
                     <h2 className={`text-lg font-semibold ${
-                      theme === "dark" ? "text-white" : "text-gray-900"
+                      theme === "dark" ? "text-white" : "text-[#2d3748]"
                     }`}>
                       {a.name} <span className="opacity-70">({a.symbol})</span>
                     </h2>

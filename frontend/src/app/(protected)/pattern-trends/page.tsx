@@ -569,7 +569,7 @@ export default function PatternTrendsPage() {
       className={`min-h-screen transition-colors duration-500 ${
         theme === 'dark'
           ? 'bg-gradient-to-b from-black via-gray-950 to-black text-white'
-          : 'bg-gradient-to-b from-[#f5f7fa] via-[#c3e0dc] to-[#9ad0c2] text-gray-900'
+          : 'bg-gradient-to-b from-[#f0f2f5] via-[#e8ebef] to-[#dfe3e8] text-[#2d3748]'
       }`}
     >
       <div className="max-w-7xl mx-auto p-6 pt-24">
@@ -675,7 +675,7 @@ export default function PatternTrendsPage() {
                       setSelectedDate('')
                     }}
                     className={`font-semibold ${
-                      theme === 'dark' ? 'text-white' : 'text-gray-900'
+                      theme === 'dark' ? 'text-white' : 'text-[#2d3748]'
                     }`}
                   >
                     {stock.symbol}
@@ -884,7 +884,7 @@ export default function PatternTrendsPage() {
                         ) : null}
                         <h3
                           className={`font-semibold ${
-                            theme === 'dark' ? 'text-white' : 'text-gray-900'
+                            theme === 'dark' ? 'text-white' : 'text-[#2d3748]'
                           }`}
                         >
                           Trend: {patternAnalysis.trend.direction} ({patternAnalysis.trend.strength})
@@ -904,7 +904,7 @@ export default function PatternTrendsPage() {
                       >
                         <h3
                           className={`font-semibold mb-3 ${
-                            theme === 'dark' ? 'text-white' : 'text-gray-900'
+                            theme === 'dark' ? 'text-white' : 'text-[#2d3748]'
                           }`}
                         >
                           Detected Patterns
@@ -950,7 +950,7 @@ export default function PatternTrendsPage() {
                                 <div className="flex items-center justify-between mb-1">
                                   <span
                                     className={`font-medium ${
-                                      theme === 'dark' ? 'text-white' : 'text-gray-900'
+                                      theme === 'dark' ? 'text-white' : 'text-[#2d3748]'
                                     }`}
                                   >
                                     {pattern.name}
@@ -1000,7 +1000,7 @@ export default function PatternTrendsPage() {
                       >
                         <h3
                           className={`font-semibold mb-2 ${
-                            theme === 'dark' ? 'text-white' : 'text-gray-900'
+                            theme === 'dark' ? 'text-white' : 'text-[#2d3748]'
                           }`}
                         >
                           Support & Resistance Levels
@@ -1053,7 +1053,7 @@ export default function PatternTrendsPage() {
                       >
                         <h3
                           className={`font-semibold mb-3 flex items-center gap-2 ${
-                            theme === 'dark' ? 'text-white' : 'text-gray-900'
+                            theme === 'dark' ? 'text-white' : 'text-[#2d3748]'
                           }`}
                         >
                           <AlertCircle className="w-5 h-5" />

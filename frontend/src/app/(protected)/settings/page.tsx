@@ -101,7 +101,7 @@ export default function SettingsPage() {
       className={`min-h-screen transition-colors duration-500 ${
         theme === 'dark'
           ? 'bg-gradient-to-b from-black via-gray-950 to-black text-white'
-          : 'bg-gradient-to-b from-[#f5f7fa] via-[#c3e0dc] to-[#9ad0c2] text-gray-900'
+          : 'bg-gradient-to-b from-[#f0f2f5] via-[#e8ebef] to-[#dfe3e8] text-[#2d3748]'
       }`}
     >
       <div className="max-w-7xl mx-auto p-6 pt-24">
@@ -210,7 +210,7 @@ export default function SettingsPage() {
                         className={`w-full border rounded p-2 pr-10 ${
                           theme === 'dark'
                             ? 'bg-gray-800 border-gray-700 text-white'
-                            : 'bg-white border-gray-300 text-gray-900'
+                            : 'bg-white border-[#2d3748]/20 text-[#2d3748]'
                         }`}
                         placeholder="Enter your current password"
                       />
@@ -247,7 +247,7 @@ export default function SettingsPage() {
                         className={`w-full border rounded p-2 pr-10 ${
                           theme === 'dark'
                             ? 'bg-gray-800 border-gray-700 text-white'
-                            : 'bg-white border-gray-300 text-gray-900'
+                            : 'bg-white border-[#2d3748]/20 text-[#2d3748]'
                         }`}
                         placeholder="Enter your new password (min. 6 characters)"
                       />
@@ -284,7 +284,7 @@ export default function SettingsPage() {
                         className={`w-full border rounded p-2 pr-10 ${
                           theme === 'dark'
                             ? 'bg-gray-800 border-gray-700 text-white'
-                            : 'bg-white border-gray-300 text-gray-900'
+                            : 'bg-white border-[#2d3748]/20 text-[#2d3748]'
                         }`}
                         placeholder="Confirm your new password"
                       />

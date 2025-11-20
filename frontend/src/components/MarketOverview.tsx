@@ -65,7 +65,7 @@ const StockItem = ({
       {ripple && (
         <span
           className={`absolute rounded-full pointer-events-none ${
-            theme === 'dark' ? 'bg-white/20' : 'bg-gray-400/20'
+            theme === 'dark' ? 'bg-white/20' : 'bg-[#2d3748]/15'
           }`}
           style={{
             left: ripple.x,
@@ -139,7 +139,7 @@ export default function MarketOverview() {
         className={`h-full flex flex-col rounded-xl overflow-hidden relative ${
           theme === 'dark'
             ? 'glass-dark bg-gray-900/40 backdrop-blur-md border border-white/10 shadow-lg'
-            : 'glass-light bg-white/30 backdrop-blur-md border border-gray-200/50 shadow-md'
+            : 'glass-light bg-[#e8ebef]/70 backdrop-blur-md border border-[#2d3748]/10 shadow-md'
         }`}
         style={{ 
           transform: 'translateZ(0)', 
@@ -152,7 +152,7 @@ export default function MarketOverview() {
           className={`absolute inset-0 rounded-xl pointer-events-none opacity-0 group-hover:opacity-100 ${
             theme === 'dark'
               ? 'bg-gradient-to-br from-blue-500/10 via-purple-500/5 to-transparent'
-              : 'bg-gradient-to-br from-blue-200/20 via-purple-200/10 to-transparent'
+              : 'bg-gradient-to-br from-blue-300/10 via-slate-300/8 to-transparent'
           }`}
           style={{
             transform: 'translateZ(0)',
@@ -163,12 +163,12 @@ export default function MarketOverview() {
         
         <div 
           className={`relative flex items-center justify-between px-4 py-3 border-b ${
-            theme === 'dark' ? 'border-white/10' : 'border-gray-300/50'
+            theme === 'dark' ? 'border-white/10' : 'border-[#2d3748]/10'
           }`}
           style={{ contain: 'layout style paint' }}
         >
           <h3 className={`text-base font-semibold ${
-            theme === 'dark' ? 'text-white' : 'text-gray-900'
+            theme === 'dark' ? 'text-white' : 'text-[#2d3748]'
           }`}>{title}</h3>
         </div>
         <div 
@@ -195,7 +195,7 @@ export default function MarketOverview() {
           {/* Fade hint when scrolled */}
           {displayItems.length > 10 && (
             <div className={`pointer-events-none absolute bottom-0 left-0 right-0 h-10 bg-gradient-to-t ${
-              theme === 'dark' ? 'from-gray-900/40' : 'from-[#eaf5f3]/40'
+              theme === 'dark' ? 'from-gray-900/40' : 'from-[#e8ebef]/40'
             } to-transparent`} />
           )}
         </div>

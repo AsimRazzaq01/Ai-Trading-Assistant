@@ -30,7 +30,7 @@ export default function NewsBriefPage() {
       className={`min-h-screen transition-colors duration-500 ${
         theme === 'dark'
           ? 'bg-gradient-to-b from-black via-gray-950 to-black text-white'
-          : 'bg-gradient-to-b from-[#f5f7fa] via-[#c3e0dc] to-[#9ad0c2] text-gray-900'
+          : 'bg-gradient-to-b from-[#f0f2f5] via-[#e8ebef] to-[#dfe3e8] text-[#2d3748]'
       }`}
     >
       <div className="max-w-7xl mx-auto p-6 pt-24">

@@ -72,7 +72,7 @@ const NewsItem = ({
       {ripple && (
         <span
           className={`absolute rounded-full pointer-events-none ${
-            theme === 'dark' ? 'bg-white/20' : 'bg-gray-400/20'
+            theme === 'dark' ? 'bg-white/20' : 'bg-[#2d3748]/15'
           }`}
           style={{
             left: ripple.x,
@@ -113,14 +113,14 @@ const NewsItem = ({
           <div className={`w-16 h-16 rounded-md flex items-center justify-center text-xs ${
             theme === 'dark'
               ? 'bg-gray-800 border border-gray-700 opacity-60'
-              : 'bg-gray-100 border border-gray-300 opacity-60'
+              : 'bg-[#e8ebef] border border-[#2d3748]/20 opacity-60'
           }`}>
             News
           </div>
         )}
         <div className="min-w-0 flex-1">
           <div className={`text-sm font-medium line-clamp-2 ${
-            theme === 'dark' ? 'text-white' : 'text-gray-900'
+            theme === 'dark' ? 'text-white' : 'text-[#2d3748]'
           }`}>{item.title}</div>
           <div className={`text-xs mt-0.5 ${
             theme === 'dark' ? 'opacity-70 text-gray-400' : 'opacity-70 text-gray-600'
@@ -179,7 +179,7 @@ export default function NewsFeed({ q }: { q?: string }) {
       className={`h-full flex flex-col rounded-xl overflow-hidden relative group ${
         theme === 'dark'
           ? 'glass-dark bg-gray-900/40 backdrop-blur-md border border-white/10 shadow-lg'
-          : 'glass-light bg-white/30 backdrop-blur-md border border-gray-200/50 shadow-md'
+          : 'glass-light bg-[#e8ebef]/70 backdrop-blur-md border border-[#2d3748]/10 shadow-md'
       }`}
       style={{ 
         transform: 'translateZ(0)', 
@@ -192,7 +192,7 @@ export default function NewsFeed({ q }: { q?: string }) {
         className={`absolute inset-0 rounded-xl pointer-events-none opacity-0 group-hover:opacity-100 ${
           theme === 'dark'
             ? 'bg-gradient-to-br from-blue-500/10 via-purple-500/5 to-transparent'
-            : 'bg-gradient-to-br from-blue-200/20 via-purple-200/10 to-transparent'
+            : 'bg-gradient-to-br from-blue-300/10 via-slate-300/8 to-transparent'
         }`}
         style={{
           transform: 'translateZ(0)',
@@ -203,12 +203,12 @@ export default function NewsFeed({ q }: { q?: string }) {
       {/* Header */}
       <div 
         className={`relative flex items-center justify-between px-4 py-3 border-b ${
-          theme === 'dark' ? 'border-white/10' : 'border-gray-300/50'
+            theme === 'dark' ? 'border-white/10' : 'border-[#2d3748]/10'
         }`}
         style={{ contain: 'layout style paint' }}
       >
         <h3 className={`text-base font-semibold ${
-          theme === 'dark' ? 'text-white' : 'text-gray-900'
+          theme === 'dark' ? 'text-white' : 'text-[#2d3748]'
         }`}>Market News</h3>
       </div>
 

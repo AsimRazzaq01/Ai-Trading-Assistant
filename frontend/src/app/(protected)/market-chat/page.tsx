@@ -156,7 +156,7 @@ export default function MarketChatPage() {
       className={`min-h-screen transition-colors duration-500 ${
         theme === 'dark'
           ? 'bg-gradient-to-b from-black via-gray-950 to-black text-white'
-          : 'bg-gradient-to-b from-[#f5f7fa] via-[#c3e0dc] to-[#9ad0c2] text-gray-900'
+          : 'bg-gradient-to-b from-[#f0f2f5] via-[#e8ebef] to-[#dfe3e8] text-[#2d3748]'
       }`}
     >
       <div className="max-w-4xl mx-auto p-6 pt-24 h-full flex flex-col">
@@ -259,7 +259,7 @@ export default function MarketChatPage() {
             className={`flex-1 border rounded-lg p-3 focus:outline-none focus:ring-2 transition-all ${
               theme === 'dark'
                 ? 'bg-gray-800 border-gray-700 text-white focus:ring-blue-500 placeholder-gray-500'
-                : 'bg-white border-gray-300 text-gray-900 focus:ring-blue-500 placeholder-gray-400'
+                : 'bg-white border-[#2d3748]/20 text-[#2d3748] focus:ring-blue-500 placeholder-gray-400'
             }`}
             disabled={loading}
           />

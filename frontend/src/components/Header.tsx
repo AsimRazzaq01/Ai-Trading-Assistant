@@ -25,7 +25,7 @@ export default function Header() {
             className={`font-semibold text-xl transition ${
               theme === 'dark' 
                 ? 'text-white hover:text-gray-300' 
-                : 'text-gray-900 hover:text-blue-600'
+                : 'text-[#2d3748] hover:text-blue-600'
             }`}
           >
             Profit Path 🚀
@@ -168,7 +168,7 @@ export default function Header() {
               className={`p-2 rounded-xl transition-all ${
                 theme === 'dark'
                   ? 'bg-white/10 border border-white/20 hover:bg-white/15 text-white'
-                  : 'bg-gray-100 border border-gray-200 hover:bg-gray-200 text-gray-900'
+                  : 'bg-[#e8ebef] border border-[#2d3748]/20 hover:bg-[#dfe3e8] text-[#2d3748]'
               }`}
               aria-label="Toggle theme"
             >
