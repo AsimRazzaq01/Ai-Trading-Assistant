@@ -216,12 +216,51 @@ export default function CandlestickChart({
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  // Calculate Bollinger Bands
+  // Calculate Bollinger Bands - return bands for all data points
   const calculateBollingerBands = (period: number = 20, stdDev: number = 2) => {
-    if (data.length < period) return []
+    if (data.length < period) {
+      // For data with less than period points, calculate with available data
+      const bands: Array<{ upper: number; middle: number; lower: number; index: number }> = []
+      
+      for (let i = 0; i < data.length; i++) {
+        // Use available data up to current point
+        const availablePeriod = Math.min(period, i + 1)
+        const slice = data.slice(Math.max(0, i - availablePeriod + 1), i + 1)
+        const sma = slice.reduce((sum, d) => sum + d.close, 0) / availablePeriod
+        
+        // Calculate standard deviation
+        const variance = slice.reduce((sum, d) => sum + Math.pow(d.close - sma, 2), 0) / availablePeriod
+        const sd = Math.sqrt(variance)
+        
+        bands.push({
+          upper: sma + (stdDev * sd),
+          middle: sma,
+          lower: sma - (stdDev * sd),
+          index: i,
+        })
+      }
+      
+      return bands
+    }
     
-    const bands: Array<{ upper: number; middle: number; lower: number }> = []
+    const bands: Array<{ upper: number; middle: number; lower: number; index: number }> = []
     
+    // Calculate for first period-1 points using available data
+    for (let i = 0; i < period - 1; i++) {
+      const slice = data.slice(0, i + 1)
+      const sma = slice.reduce((sum, d) => sum + d.close, 0) / slice.length
+      const variance = slice.reduce((sum, d) => sum + Math.pow(d.close - sma, 2), 0) / slice.length
+      const sd = Math.sqrt(variance)
+      
+      bands.push({
+        upper: sma + (stdDev * sd),
+        middle: sma,
+        lower: sma - (stdDev * sd),
+        index: i,
+      })
+    }
+    
+    // Calculate for remaining points with full period
     for (let i = period - 1; i < data.length; i++) {
       // Calculate SMA (middle band)
       const slice = data.slice(i - period + 1, i + 1)
@@ -236,6 +275,7 @@ export default function CandlestickChart({
         upper: sma + (stdDev * sd),
         middle: sma,
         lower: sma - (stdDev * sd),
+        index: i,
       })
     }
     
@@ -296,20 +336,30 @@ export default function CandlestickChart({
   const minCandleWidth = 3 // Minimum candle width for visibility
   const availableWidth = chartWidth
   
-  // Calculate spacing: ensure at least minCandleSpacing between candles
-  const spacingPerCandle = availableWidth / data.length
+  // Calculate spacing: ensure candles fit within chart bounds
+  // First candle center at 0.5 * spacing, last candle center at (data.length - 0.5) * spacing
+  // Total width used: (data.length - 1) * spacing
+  // To fit within availableWidth: (data.length - 1) * spacing <= availableWidth
+  const maxSpacing = data.length > 1 ? availableWidth / (data.length - 1) : availableWidth
+  const spacingPerCandle = maxSpacing
+  
   // Calculate candle width: leave space for gaps between candles
   const calculatedWidth = spacingPerCandle - minCandleSpacing
   const candleWidth = Math.min(maxCandleWidth, Math.max(minCandleWidth, calculatedWidth))
-  // Ensure spacing is always at least candleWidth + minCandleSpacing
-  const candleSpacing = Math.max(spacingPerCandle, candleWidth + minCandleSpacing)
+  
+  // Final spacing: use spacingPerCandle which ensures candles fit within bounds
+  // First candle at padding.left + 0.5 * spacingPerCandle
+  // Last candle at padding.left + (data.length - 0.5) * spacingPerCandle
+  // This ensures: last candle center <= padding.left + availableWidth (since (data.length - 0.5) * spacingPerCandle <= (data.length - 1) * spacingPerCandle <= availableWidth)
+  const candleSpacing = spacingPerCandle
 
-  // Calculate Bollinger Bands if enabled
-  const bollingerBands = showBollingerBands ? calculateBollingerBands(20, 2) : []
+  // Calculate Bollinger Bands if enabled - only show in 1-day view
+  const shouldShowBollingerBands = showBollingerBands && isOneDayView
+  const bollingerBands = shouldShowBollingerBands ? calculateBollingerBands(20, 2) : []
   
   // Find min/max for scaling (include Bollinger Bands if shown)
   let allValues = data.flatMap((d) => [d.high, d.low])
-  if (showBollingerBands && bollingerBands.length > 0) {
+  if (shouldShowBollingerBands && bollingerBands.length > 0) {
     const bbValues = bollingerBands.flatMap((bb) => [bb.upper, bb.lower])
     allValues = [...allValues, ...bbValues]
   }
@@ -396,21 +446,23 @@ export default function CandlestickChart({
         
         {/* Indicators Toggle and Legend */}
         <div className="flex items-center gap-4 text-xs ml-auto">
-          {/* Bollinger Bands Toggle */}
-          <label className={`flex items-center gap-2 cursor-pointer ${
-            theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
-          }`}>
-            <input
-              type="checkbox"
-              checked={showBollingerBands}
-              onChange={(e) => setShowBollingerBands(e.target.checked)}
-              className="w-4 h-4 rounded border-gray-600 text-blue-600 focus:ring-blue-500"
-            />
-            <span>Bollinger Bands</span>
-          </label>
+          {/* Bollinger Bands Toggle - Only show in 1-day view */}
+          {isOneDayView && (
+            <label className={`flex items-center gap-2 cursor-pointer ${
+              theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+            }`}>
+              <input
+                type="checkbox"
+                checked={showBollingerBands}
+                onChange={(e) => setShowBollingerBands(e.target.checked)}
+                className="w-4 h-4 rounded border-gray-600 text-blue-600 focus:ring-blue-500"
+              />
+              <span>Bollinger Bands</span>
+            </label>
+          )}
           
           {/* Legend with clickable color options */}
-          {(patternAnalysis?.supportResistance || patternAnalysis?.trend || selectedPatternIndex !== null || showBollingerBands) && (
+          {(patternAnalysis?.supportResistance || patternAnalysis?.trend || selectedPatternIndex !== null || shouldShowBollingerBands) && (
             <div className="flex items-center gap-4">
               {patternAnalysis?.trend && (
                 <div className="flex items-center gap-1 relative color-menu-container">
@@ -654,7 +706,7 @@ export default function CandlestickChart({
                 </span>
                 </div>
               )}
-              {showBollingerBands && (
+              {shouldShowBollingerBands && (
                 <div className="flex items-center gap-1 relative color-menu-container">
                   <div className="w-3 h-0.5" style={{ backgroundColor: colors.bollingerMiddle }} />
                   <button
@@ -1048,13 +1100,13 @@ export default function CandlestickChart({
             </>
           )}
 
-          {/* Bollinger Bands */}
-          {showBollingerBands && bollingerBands.length > 0 && (
+          {/* Bollinger Bands - Only show in 1-day view and properly aligned */}
+          {shouldShowBollingerBands && bollingerBands.length > 0 && (
             <>
               {/* Upper Band */}
               <path
-                d={`M ${padding.left + (19 + 0.5) * candleSpacing},${scaleY(bollingerBands[0].upper)} ${bollingerBands.map((bb, idx) => {
-                  const x = padding.left + (19 + idx + 0.5) * candleSpacing
+                d={`M ${padding.left + (bollingerBands[0].index + 0.5) * candleSpacing},${scaleY(bollingerBands[0].upper)} ${bollingerBands.slice(1).map((bb) => {
+                  const x = padding.left + (bb.index + 0.5) * candleSpacing
                   return `L ${x},${scaleY(bb.upper)}`
                 }).join(' ')}`}
                 fill="none"
@@ -1065,8 +1117,8 @@ export default function CandlestickChart({
               />
               {/* Middle Band (SMA) */}
               <path
-                d={`M ${padding.left + (19 + 0.5) * candleSpacing},${scaleY(bollingerBands[0].middle)} ${bollingerBands.map((bb, idx) => {
-                  const x = padding.left + (19 + idx + 0.5) * candleSpacing
+                d={`M ${padding.left + (bollingerBands[0].index + 0.5) * candleSpacing},${scaleY(bollingerBands[0].middle)} ${bollingerBands.slice(1).map((bb) => {
+                  const x = padding.left + (bb.index + 0.5) * candleSpacing
                   return `L ${x},${scaleY(bb.middle)}`
                 }).join(' ')}`}
                 fill="none"
@@ -1077,8 +1129,8 @@ export default function CandlestickChart({
               />
               {/* Lower Band */}
               <path
-                d={`M ${padding.left + (19 + 0.5) * candleSpacing},${scaleY(bollingerBands[0].lower)} ${bollingerBands.map((bb, idx) => {
-                  const x = padding.left + (19 + idx + 0.5) * candleSpacing
+                d={`M ${padding.left + (bollingerBands[0].index + 0.5) * candleSpacing},${scaleY(bollingerBands[0].lower)} ${bollingerBands.slice(1).map((bb) => {
+                  const x = padding.left + (bb.index + 0.5) * candleSpacing
                   return `L ${x},${scaleY(bb.lower)}`
                 }).join(' ')}`}
                 fill="none"
@@ -1095,13 +1147,13 @@ export default function CandlestickChart({
                 </linearGradient>
               </defs>
               <path
-                d={`M ${padding.left + (19 + 0.5) * candleSpacing},${scaleY(bollingerBands[0].upper)} ${bollingerBands.map((bb, idx) => {
-                  const x = padding.left + (19 + idx + 0.5) * candleSpacing
+                d={`M ${padding.left + (bollingerBands[0].index + 0.5) * candleSpacing},${scaleY(bollingerBands[0].upper)} ${bollingerBands.map((bb) => {
+                  const x = padding.left + (bb.index + 0.5) * candleSpacing
                   return `L ${x},${scaleY(bb.upper)}`
-                }).join(' ')} ${bollingerBands.map((bb, idx) => {
-                  const x = padding.left + (19 + idx + 0.5) * candleSpacing
+                }).slice(1).join(' ')} ${[...bollingerBands].reverse().map((bb) => {
+                  const x = padding.left + (bb.index + 0.5) * candleSpacing
                   return `L ${x},${scaleY(bb.lower)}`
-                }).reverse().join(' ')} Z`}
+                }).join(' ')} Z`}
                 fill="url(#bollingerFill)"
                 opacity="0.3"
               />
@@ -1306,13 +1358,42 @@ export default function CandlestickChart({
               // Format date based on view type
               let dateLabel = ''
               if (isOneDayView) {
-                // Show timestamp for 1 day view
-                const date = new Date(d.date)
-                dateLabel = date.toLocaleTimeString('en-US', { 
-                  hour: 'numeric', 
-                  minute: '2-digit',
-                  hour12: true 
-                })
+                // Show hour for 1 day view
+                try {
+                  const date = new Date(d.date)
+                  // Check if date is valid
+                  if (!isNaN(date.getTime())) {
+                    dateLabel = date.toLocaleTimeString('en-US', { 
+                      hour: 'numeric', 
+                      minute: '2-digit',
+                      hour12: true 
+                    })
+                  } else {
+                    // Fallback: try parsing as ISO string or date string
+                    const parsedDate = d.date.includes('T') ? new Date(d.date) : new Date(d.date + 'T00:00:00')
+                    if (!isNaN(parsedDate.getTime())) {
+                      dateLabel = parsedDate.toLocaleTimeString('en-US', { 
+                        hour: 'numeric', 
+                        minute: '2-digit',
+                        hour12: true 
+                      })
+                    } else {
+                      dateLabel = d.date.split('T')[1]?.substring(0, 5) || d.date
+                    }
+                  }
+                } catch (e) {
+                  // If parsing fails, show the raw time part if available
+                  const timeMatch = d.date.match(/T(\d{2}):(\d{2})/)
+                  if (timeMatch) {
+                    const hour = parseInt(timeMatch[1])
+                    const minute = timeMatch[2]
+                    const period = hour >= 12 ? 'PM' : 'AM'
+                    const displayHour = hour > 12 ? hour - 12 : (hour === 0 ? 12 : hour)
+                    dateLabel = `${displayHour}:${minute} ${period}`
+                  } else {
+                    dateLabel = d.date
+                  }
+                }
               } else {
                 // Show date for multi-day view
                 dateLabel = new Date(d.date).toLocaleDateString('en-US', { 

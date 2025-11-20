@@ -803,15 +803,50 @@ export default function PatternTrendsPage() {
                 {/* Candlestick Chart */}
                 {candlestickData.length > 0 && (
                   <div className="mb-6 w-full">
+                    {/* Visual indicator when in 1-day view */}
+                    {selectedDate && (
+                      <div className={`mb-4 p-3 rounded-lg border flex items-center justify-between ${
+                        theme === 'dark'
+                          ? 'bg-blue-900/30 border-blue-700 text-blue-300'
+                          : 'bg-blue-50 border-blue-300 text-blue-800'
+                      }`}>
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold">📊 1-Day Intraday View</span>
+                          <span className="text-sm">
+                            {new Date(selectedDate).toLocaleDateString('en-US', { 
+                              month: 'short', 
+                              day: 'numeric',
+                              year: 'numeric'
+                            })}
+                          </span>
+                        </div>
+                        <button
+                          onClick={() => {
+                            setSelectedDate('')
+                            fetchCandlestickData(selectedSymbol)
+                          }}
+                          className={`px-3 py-1 rounded text-sm transition-all ${
+                            theme === 'dark'
+                              ? 'bg-blue-800 hover:bg-blue-700 text-white'
+                              : 'bg-blue-600 hover:bg-blue-700 text-white'
+                          }`}
+                        >
+                          ← Back to {chartRange}-Day View
+                        </button>
+                      </div>
+                    )}
                     <CandlestickChart 
                       data={candlestickData} 
                       symbol={selectedSymbol} 
                       height={500}
-                      isOneDayView={false}
+                      isOneDayView={!!selectedDate}
                       onCandleClick={(date) => {
-                        // When clicking a candle, show intraday data for that date
-                        const clickedDate = date.split('T')[0]
-                        fetchCandlestickData(selectedSymbol, clickedDate)
+                        // Only allow clicking when not in 1-day view
+                        if (!selectedDate) {
+                          // When clicking a candle, show intraday data for that date
+                          const clickedDate = date.split('T')[0]
+                          fetchCandlestickData(selectedSymbol, clickedDate)
+                        }
                       }}
                       patternAnalysis={patternAnalysis ? {
                         ...patternAnalysis,

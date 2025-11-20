@@ -49,14 +49,19 @@ const StockItem = ({
   return (
     <div 
       onClick={handleClick}
-      className={`relative flex items-center justify-between text-sm cursor-pointer transition-colors duration-150 rounded-lg p-2 overflow-hidden group/item ${
+      data-theme={theme}
+      className={`relative flex items-center justify-between text-sm cursor-pointer rounded-lg p-2 overflow-hidden group/item stock-item-hover ${
         theme === 'dark'
-          ? 'hover:bg-white/5 border border-transparent'
-          : 'hover:bg-white/60 border border-transparent'
-      } will-change-transform`}
-      style={{ transform: 'translateZ(0)' }}
+          ? 'border border-transparent'
+          : 'border border-transparent'
+      }`}
+      style={{ 
+        transform: 'translateZ(0)',
+        backfaceVisibility: 'hidden',
+        WebkitFontSmoothing: 'antialiased',
+      }}
     >
-      {/* Ripple effect */}
+      {/* Ripple effect - optimized */}
       {ripple && (
         <span
           className={`absolute rounded-full pointer-events-none ${
@@ -69,17 +74,24 @@ const StockItem = ({
             height: 0,
             transform: 'translate(-50%, -50%) translateZ(0)',
             animation: 'ripple 0.4s ease-out',
-            willChange: 'width, height, opacity',
+            willChange: 'transform, opacity',
           }}
         />
       )}
       
-      {/* Border glow on hover - simplified for performance */}
-      <div className={`absolute inset-0 rounded-lg opacity-0 group-hover/item:opacity-100 transition-opacity duration-150 ${
-        (row.changePct ?? 0) >= 0
-          ? 'bg-green-500/5'
-          : 'bg-red-500/5'
-      } pointer-events-none will-change-opacity`} />
+      {/* Border glow on hover - GPU accelerated with CSS */}
+      <div 
+        className={`absolute inset-0 rounded-lg pointer-events-none opacity-0 group-hover/item:opacity-100 ${
+          (row.changePct ?? 0) >= 0
+            ? 'bg-green-500/5'
+            : 'bg-red-500/5'
+        }`}
+        style={{
+          transform: 'translateZ(0)',
+          transition: 'opacity 120ms cubic-bezier(0.4, 0, 0.2, 1)',
+          backfaceVisibility: 'hidden',
+        }}
+      />
       
       <div className="relative flex items-center gap-2 z-10">
         <span className="font-mono font-semibold">{row.symbol}</span>
@@ -87,7 +99,7 @@ const StockItem = ({
       </div>
       <div className="relative text-right z-10">
         <div className="opacity-80">${(row.price ?? 0).toFixed(2)}</div>
-        <div className={`transition-all duration-300 ${(row.changePct ?? 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+        <div className={`${(row.changePct ?? 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
           {(row.changePct ?? 0) >= 0 ? '+' : ''}{(row.changePct ?? 0).toFixed(2)}%
         </div>
       </div>
@@ -123,28 +135,50 @@ export default function MarketOverview() {
     const displayItems = items.slice(0, 50);
     
     return (
-      <div className={`h-full flex flex-col rounded-xl transition-shadow duration-200 overflow-hidden relative group ${
-        theme === 'dark'
-          ? 'glass-dark bg-gray-900/40 backdrop-blur-md border border-white/10 shadow-lg'
-          : 'glass-light bg-white/30 backdrop-blur-md border border-gray-200/50 shadow-md'
-      } hover:shadow-xl will-change-shadow`}
-      style={{ transform: 'translateZ(0)', contain: 'layout style paint' }}>
-        {/* Glow effect on hover */}
-        <div className={`absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 ${
+      <div 
+        className={`h-full flex flex-col rounded-xl overflow-hidden relative ${
           theme === 'dark'
-            ? 'bg-gradient-to-br from-blue-500/10 via-purple-500/5 to-transparent'
-            : 'bg-gradient-to-br from-blue-200/20 via-purple-200/10 to-transparent'
-        } pointer-events-none will-change-opacity`} />
-        
-        <div className={`relative flex items-center justify-between px-4 py-3 border-b ${
-          theme === 'dark' ? 'border-white/10' : 'border-gray-300/50'
+            ? 'glass-dark bg-gray-900/40 backdrop-blur-md border border-white/10 shadow-lg'
+            : 'glass-light bg-white/30 backdrop-blur-md border border-gray-200/50 shadow-md'
         }`}
-        style={{ contain: 'layout style paint' }}>
+        style={{ 
+          transform: 'translateZ(0)', 
+          contain: 'layout style paint',
+          backfaceVisibility: 'hidden',
+        }}
+      >
+        {/* Glow effect on hover - optimized with CSS */}
+        <div 
+          className={`absolute inset-0 rounded-xl pointer-events-none opacity-0 group-hover:opacity-100 ${
+            theme === 'dark'
+              ? 'bg-gradient-to-br from-blue-500/10 via-purple-500/5 to-transparent'
+              : 'bg-gradient-to-br from-blue-200/20 via-purple-200/10 to-transparent'
+          }`}
+          style={{
+            transform: 'translateZ(0)',
+            transition: 'opacity 150ms cubic-bezier(0.4, 0, 0.2, 1)',
+            backfaceVisibility: 'hidden',
+          }}
+        />
+        
+        <div 
+          className={`relative flex items-center justify-between px-4 py-3 border-b ${
+            theme === 'dark' ? 'border-white/10' : 'border-gray-300/50'
+          }`}
+          style={{ contain: 'layout style paint' }}
+        >
           <h3 className={`text-base font-semibold ${
             theme === 'dark' ? 'text-white' : 'text-gray-900'
           }`}>{title}</h3>
         </div>
-        <div className="relative flex-1 overflow-auto max-h-[72vh] will-change-scroll">
+        <div 
+          className="relative flex-1 overflow-auto max-h-[72vh]"
+          style={{
+            transform: 'translateZ(0)',
+            contain: 'layout style paint',
+            WebkitOverflowScrolling: 'touch',
+          }}
+        >
           <div className="p-4 space-y-2">
             {displayItems.map(r => (
               <StockItem 

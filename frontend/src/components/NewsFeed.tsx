@@ -56,14 +56,19 @@ const NewsItem = ({
   return (
     <div
       onClick={handleClick}
-      className={`relative block rounded-xl p-3 border transition-colors duration-150 cursor-pointer overflow-hidden group/item ${
+      data-theme={theme}
+      className={`relative block rounded-xl p-3 border cursor-pointer overflow-hidden group/item news-item-hover ${
         theme === 'dark'
-          ? 'hover:bg-white/5 border-white/10'
-          : 'hover:bg-white/60 border-gray-300/50'
-      } will-change-transform`}
-      style={{ transform: 'translateZ(0)' }}
+          ? 'border-white/10'
+          : 'border-gray-300/50'
+      }`}
+      style={{ 
+        transform: 'translateZ(0)',
+        backfaceVisibility: 'hidden',
+        WebkitFontSmoothing: 'antialiased',
+      }}
     >
-      {/* Ripple effect */}
+      {/* Ripple effect - optimized */}
       {ripple && (
         <span
           className={`absolute rounded-full pointer-events-none ${
@@ -76,17 +81,24 @@ const NewsItem = ({
             height: 0,
             transform: 'translate(-50%, -50%) translateZ(0)',
             animation: 'ripple 0.4s ease-out',
-            willChange: 'width, height, opacity',
+            willChange: 'transform, opacity',
           }}
         />
       )}
       
-      {/* Border glow on hover - simplified for performance */}
-      <div className={`absolute inset-0 rounded-xl opacity-0 group-hover/item:opacity-100 transition-opacity duration-150 ${
-        theme === 'dark'
-          ? 'bg-blue-500/5'
-          : 'bg-blue-200/10'
-      } pointer-events-none will-change-opacity`} />
+      {/* Border glow on hover - GPU accelerated with CSS */}
+      <div 
+        className={`absolute inset-0 rounded-xl pointer-events-none opacity-0 group-hover/item:opacity-100 ${
+          theme === 'dark'
+            ? 'bg-blue-500/5'
+            : 'bg-blue-200/10'
+        }`}
+        style={{
+          transform: 'translateZ(0)',
+          transition: 'opacity 120ms cubic-bezier(0.4, 0, 0.2, 1)',
+          backfaceVisibility: 'hidden',
+        }}
+      />
       
       <div className="relative flex gap-3 z-10">
         {item.image ? (
@@ -94,6 +106,8 @@ const NewsItem = ({
             src={item.image}
             alt=""
             className="w-16 h-16 object-cover rounded-md flex-shrink-0"
+            style={{ transform: 'translateZ(0)', backfaceVisibility: 'hidden' }}
+            loading="lazy"
           />
         ) : (
           <div className={`w-16 h-16 rounded-md flex items-center justify-center text-xs ${
@@ -121,9 +135,13 @@ const NewsItem = ({
               {item.summary}
             </div>
           )}
-          <div className={`text-xs mt-2 flex items-center gap-1 transition-colors duration-300 ${
+          <div className={`text-xs mt-2 flex items-center gap-1 ${
             theme === 'dark' ? 'text-blue-400 group-hover/item:text-blue-300' : 'text-blue-600 group-hover/item:text-blue-700'
-          }`}>
+          }`}
+          style={{
+            transition: 'color 120ms cubic-bezier(0.4, 0, 0.2, 1)',
+          }}
+          >
             <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
             </svg>
@@ -157,29 +175,52 @@ export default function NewsFeed({ q }: { q?: string }) {
   }, [q])
 
   return (
-    <div className={`h-full flex flex-col rounded-xl transition-shadow duration-200 overflow-hidden relative group ${
-      theme === 'dark'
-        ? 'glass-dark bg-gray-900/40 backdrop-blur-md border border-white/10 shadow-lg'
-        : 'glass-light bg-white/30 backdrop-blur-md border border-gray-200/50 shadow-md'
-    } hover:shadow-xl will-change-shadow`}
-    style={{ transform: 'translateZ(0)', contain: 'layout style paint' }}>
-      {/* Glow effect on hover */}
-      <div className={`absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 ${
+    <div 
+      className={`h-full flex flex-col rounded-xl overflow-hidden relative group ${
         theme === 'dark'
-          ? 'bg-gradient-to-br from-blue-500/10 via-purple-500/5 to-transparent'
-          : 'bg-gradient-to-br from-blue-200/20 via-purple-200/10 to-transparent'
-      } pointer-events-none will-change-opacity`} />
+          ? 'glass-dark bg-gray-900/40 backdrop-blur-md border border-white/10 shadow-lg'
+          : 'glass-light bg-white/30 backdrop-blur-md border border-gray-200/50 shadow-md'
+      }`}
+      style={{ 
+        transform: 'translateZ(0)', 
+        contain: 'layout style paint',
+        backfaceVisibility: 'hidden',
+      }}
+    >
+      {/* Glow effect on hover - optimized with CSS */}
+      <div 
+        className={`absolute inset-0 rounded-xl pointer-events-none opacity-0 group-hover:opacity-100 ${
+          theme === 'dark'
+            ? 'bg-gradient-to-br from-blue-500/10 via-purple-500/5 to-transparent'
+            : 'bg-gradient-to-br from-blue-200/20 via-purple-200/10 to-transparent'
+        }`}
+        style={{
+          transform: 'translateZ(0)',
+          transition: 'opacity 150ms cubic-bezier(0.4, 0, 0.2, 1)',
+          backfaceVisibility: 'hidden',
+        }}
+      />
       {/* Header */}
-      <div className={`relative flex items-center justify-between px-4 py-3 border-b ${
-        theme === 'dark' ? 'border-white/10' : 'border-gray-300/50'
-      }`}>
+      <div 
+        className={`relative flex items-center justify-between px-4 py-3 border-b ${
+          theme === 'dark' ? 'border-white/10' : 'border-gray-300/50'
+        }`}
+        style={{ contain: 'layout style paint' }}
+      >
         <h3 className={`text-base font-semibold ${
           theme === 'dark' ? 'text-white' : 'text-gray-900'
         }`}>Market News</h3>
       </div>
 
       {/* Scrollable content */}
-      <div className="relative flex-1 overflow-auto max-h-[72vh] will-change-scroll">
+      <div 
+        className="relative flex-1 overflow-auto max-h-[72vh]"
+        style={{
+          transform: 'translateZ(0)',
+          contain: 'layout style paint',
+          WebkitOverflowScrolling: 'touch',
+        }}
+      >
         <div className="p-4 space-y-3">
           {err && (
             <div className={`text-sm ${
