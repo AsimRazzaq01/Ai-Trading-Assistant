@@ -29,6 +29,7 @@ export default function MarketOverview() {
   }
   
   const List = ({ title, items }: { title: string; items: Row[] }) => {
+    const [expanded, setExpanded] = useState(false)
     // Ensure we show all items (up to 50)
     const displayItems = items.slice(0, 50);
     
@@ -44,8 +45,22 @@ export default function MarketOverview() {
           <h3 className={`text-base font-semibold ${
             theme === 'dark' ? 'text-white' : 'text-gray-900'
           }`}>{title}</h3>
+          <button
+            onClick={() => setExpanded(v => !v)}
+            className={`text-xs px-3 py-1 rounded-lg transition-all ${
+              theme === 'dark'
+                ? 'bg-gray-800 hover:bg-gray-700 border border-gray-700 text-white'
+                : 'bg-white hover:bg-gray-50 border border-gray-300 text-gray-900'
+            }`}
+            aria-expanded={expanded}
+          >
+            {expanded ? 'Collapse' : 'Expand'}
+          </button>
         </div>
-        <div className="relative flex-1 overflow-auto max-h-[500px]">
+        <div className={[
+          'relative flex-1 overflow-auto',
+          expanded ? 'max-h-[72vh]' : 'max-h-[500px]'
+        ].join(' ')}>
           <div className="p-4 space-y-2">
             {displayItems.map(r => (
               <div 
@@ -73,8 +88,8 @@ export default function MarketOverview() {
               theme === 'dark' ? 'opacity-60 text-gray-400' : 'opacity-60 text-gray-600'
             }`}>No data.</div>}
           </div>
-          {/* Fade hint when scrolled */}
-          {displayItems.length > 10 && (
+          {/* Fade hint when collapsed */}
+          {!expanded && displayItems.length > 0 && (
             <div className={`pointer-events-none absolute bottom-0 left-0 right-0 h-10 bg-gradient-to-t ${
               theme === 'dark' ? 'from-gray-900/40' : 'from-[#eaf5f3]/40'
             } to-transparent`} />
