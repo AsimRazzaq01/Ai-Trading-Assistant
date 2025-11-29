@@ -26,6 +26,9 @@ class Settings(BaseSettings):
     # --- CORS ---
     ALLOWED_ORIGINS: str = "http://localhost:3000"
 
+    # --- Frontend URL (for OAuth redirects) ---
+    FRONTEND_URL: str = "http://localhost:3000"
+
     # --- OpenAI ---
     OPENAI_API_KEY: str = ""
 

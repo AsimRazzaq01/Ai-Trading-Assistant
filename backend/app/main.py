@@ -4,6 +4,7 @@ print("🚀 Booting FastAPI container...")
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.sessions import SessionMiddleware  # type: ignore
 from app.api.auth_router import router as auth_router
 from app.api.trades_router import router as trades_router
 from app.api.debug_router import router as debug_router
@@ -11,6 +12,7 @@ from app.api.watchlist_router import router as watchlist_router
 from app.api.chat_router import router as chat_router
 from app.api.pattern_trends_router import router as pattern_trends_router
 from app.api.risk_management_router import router as risk_management_router
+from app.api.oauth_debug import router as oauth_debug_router
 from app.db.database import Base, engine
 from app.core.config import settings
 
@@ -42,6 +44,28 @@ except ModuleNotFoundError:
 # ============================================================
 
 app = FastAPI(title="Profit Path — AI Trading Assistant")
+
+
+# ============================================================
+# 🔐 Session Middleware (Required for OAuth)
+# ============================================================
+
+# Session secret key - use JWT secret or generate a new one for sessions
+# Sessions are used by Authlib to store OAuth state
+session_secret = settings.JWT_SECRET_KEY if settings.JWT_SECRET_KEY != "change_me" else "session-secret-key-change-in-production"
+
+# Determine session cookie settings based on environment
+is_production = settings.ENV.lower() == "production"
+
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=session_secret,
+    max_age=60 * 60 * 24,  # 24 hours
+    same_site="none" if is_production else "lax",
+    https_only=is_production,
+)
+
+print("✅ SessionMiddleware configured for OAuth.")
 
 
 # ============================================================
@@ -109,6 +133,7 @@ app.include_router(chat_router, tags=["Chat"])
 app.include_router(pattern_trends_router, tags=["Pattern Trends"])
 app.include_router(risk_management_router, tags=["Risk Management"])
 app.include_router(debug_router)
+app.include_router(oauth_debug_router, tags=["OAuth Debug"])
 
 
 # ============================================================

@@ -3,16 +3,32 @@
 # ============================================================
 
 from typing import Optional, Literal, cast
-from fastapi import APIRouter, Depends, HTTPException, Response, Header, Cookie
+from fastapi import APIRouter, Depends, HTTPException, Response, Header, Cookie, Request
+from fastapi.responses import RedirectResponse
 from pydantic import BaseModel, EmailStr, Field, model_validator
 from sqlalchemy.orm import Session
 from jose import jwt, JWTError, ExpiredSignatureError  # type: ignore
+from authlib.integrations.starlette_client import OAuth, OAuthError  # type: ignore
+import httpx  # type: ignore
 from app.db.database import get_db
 from app.db import models
 from app.core.security import hash_password, create_access_token, verify_password
 from app.core.config import settings
 
 router = APIRouter()
+
+# Initialize OAuth (lazy initialization to avoid import errors)
+oauth = None
+
+def get_oauth():
+    """Get or create OAuth instance."""
+    global oauth
+    if oauth is None:
+        try:
+            oauth = OAuth()
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"OAuth initialization failed: {str(e)}")
+    return oauth
 
 
 class RegisterRequest(BaseModel):
@@ -164,6 +180,350 @@ def change_password(
     db.refresh(user)
 
     return {"message": "Password changed successfully"}
+
+
+# ============================================================
+# 🔐 OAuth Helper Functions
+# ============================================================
+
+def set_auth_cookie(response: Response, token: str):
+    """Helper function to set authentication cookie with proper settings."""
+    is_production = settings.ENV.lower() == "production"
+    
+    if is_production:
+        response.set_cookie(
+            key=settings.COOKIE_NAME,
+            value=token,
+            httponly=True,
+            samesite="none",
+            secure=True,
+            max_age=60 * 60 * 24,
+            path="/",
+            domain=settings.COOKIE_DOMAIN if settings.COOKIE_DOMAIN else None,
+        )
+    else:
+        samesite_value = cast(
+            Literal["lax", "strict", "none"],
+            (settings.COOKIE_SAMESITE or "lax").lower()
+        )
+        response.set_cookie(
+            key=settings.COOKIE_NAME,
+            value=token,
+            httponly=True,
+            samesite=samesite_value,
+            secure=bool(settings.COOKIE_SECURE),
+            max_age=60 * 60 * 24,
+            path="/",
+        )
+
+
+def get_or_create_oauth_user(
+    db: Session,
+    email: str,
+    provider: str,
+    provider_id: str,
+    name: Optional[str] = None,
+    username: Optional[str] = None
+) -> models.User:
+    """Get existing OAuth user or create a new one."""
+    # First, try to find by provider_id
+    user = db.query(models.User).filter(
+        models.User.provider == provider,
+        models.User.provider_id == provider_id
+    ).first()
+    
+    if user:
+        # Update email/name if changed
+        if email and user.email != email:
+            user.email = email
+        if name and user.name != name:
+            user.name = name
+        db.commit()
+        db.refresh(user)
+        return user
+    
+    # If not found by provider_id, check by email
+    user = db.query(models.User).filter(models.User.email == email).first()
+    
+    if user:
+        # Link OAuth to existing account
+        user.provider = provider
+        user.provider_id = provider_id
+        if name:
+            user.name = name
+        db.commit()
+        db.refresh(user)
+        return user
+    
+    # Create new user
+    # OAuth users don't need a password, but we'll set a random one for safety
+    # (they'll never use it since they login via OAuth)
+    random_password = hash_password(f"oauth_{provider}_{provider_id}_no_password")
+    
+    new_user = models.User(
+        email=email,
+        name=name,
+        username=username,
+        hashed_password=random_password,
+        provider=provider,
+        provider_id=provider_id
+    )
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+    return new_user
+
+
+# ============================================================
+# 🔵 Google OAuth
+# ============================================================
+
+# Register Google OAuth
+# Note: We'll register it dynamically in the route to handle missing config gracefully
+
+
+@router.get("/google/login")
+async def google_login(request: Request):
+    """Initiate Google OAuth login."""
+    try:
+        oauth_instance = get_oauth()
+        
+        if not settings.GOOGLE_CLIENT_ID or not settings.GOOGLE_CLIENT_SECRET:
+            raise HTTPException(status_code=500, detail="Google OAuth not configured")
+        
+        # Determine backend URL for callback
+        backend_url = request.base_url
+        if settings.ENV.lower() == "production":
+            backend_url_str = str(backend_url).rstrip('/')
+        else:
+            backend_url_str = "http://localhost:8000"
+        
+        redirect_uri = settings.GOOGLE_REDIRECT_URI or f"{backend_url_str}/auth/google/callback"
+        
+        # Register Google OAuth if not already registered
+        try:
+            _ = oauth_instance.google
+        except (AttributeError, KeyError):
+            oauth_instance.register(
+                name="google",
+                client_id=settings.GOOGLE_CLIENT_ID,
+                client_secret=settings.GOOGLE_CLIENT_SECRET,
+                server_metadata_url="https://accounts.google.com/.well-known/openid-configuration",
+                client_kwargs={
+                    "scope": "openid email profile"
+                }
+            )
+        
+        return await oauth_instance.google.authorize_redirect(request, redirect_uri)
+    except HTTPException:
+        raise
+    except Exception as e:
+        import traceback
+        error_detail = f"OAuth error: {str(e)}\n{traceback.format_exc()}"
+        raise HTTPException(status_code=500, detail=error_detail)
+
+
+@router.get("/google/callback")
+async def google_callback(request: Request, db: Session = Depends(get_db)):
+    """Handle Google OAuth callback."""
+    oauth_instance = get_oauth()
+    
+    if not settings.GOOGLE_CLIENT_ID or not settings.GOOGLE_CLIENT_SECRET:
+        raise HTTPException(status_code=500, detail="Google OAuth not configured")
+    
+    # Ensure Google OAuth is registered
+    try:
+        _ = oauth_instance.google
+    except (AttributeError, KeyError):
+        oauth_instance.register(
+            name="google",
+            client_id=settings.GOOGLE_CLIENT_ID,
+            client_secret=settings.GOOGLE_CLIENT_SECRET,
+            server_metadata_url="https://accounts.google.com/.well-known/openid-configuration",
+            client_kwargs={
+                "scope": "openid email profile"
+            }
+        )
+    
+    try:
+        token = await oauth_instance.google.authorize_access_token(request)
+        user_info = token.get("userinfo")
+        
+        if not user_info:
+            # Fetch user info if not in token
+            access_token = token.get("access_token")
+            async with httpx.AsyncClient() as client:
+                resp = await client.get(
+                    "https://www.googleapis.com/oauth2/v2/userinfo",
+                    headers={"Authorization": f"Bearer {access_token}"}
+                )
+                user_info = resp.json()
+        
+        email = user_info.get("email")
+        provider_id = user_info.get("sub") or str(user_info.get("id", ""))
+        name = user_info.get("name")
+        
+        if not email:
+            raise HTTPException(status_code=400, detail="Email not provided by Google")
+        
+        # Get or create user
+        user = get_or_create_oauth_user(
+            db=db,
+            email=email,
+            provider="google",
+            provider_id=provider_id,
+            name=name
+        )
+        
+        # Create JWT token
+        token = create_access_token({"sub": str(user.id)})
+        
+        # Create redirect response
+        redirect_url = f"{settings.FRONTEND_URL}/dashboard"
+        response = RedirectResponse(url=redirect_url, status_code=302)
+        
+        # Set cookie
+        set_auth_cookie(response, token)
+        
+        return response
+        
+    except OAuthError as e:
+        raise HTTPException(status_code=400, detail=f"OAuth error: {str(e)}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Authentication failed: {str(e)}")
+
+
+# ============================================================
+# 🐙 GitHub OAuth
+# ============================================================
+
+# Register GitHub OAuth dynamically in routes
+
+
+@router.get("/github/login")
+async def github_login(request: Request):
+    """Initiate GitHub OAuth login."""
+    try:
+        oauth_instance = get_oauth()
+        
+        if not settings.GITHUB_CLIENT_ID or not settings.GITHUB_CLIENT_SECRET:
+            raise HTTPException(status_code=500, detail="GitHub OAuth not configured")
+        
+        # Determine backend URL for callback
+        backend_url = request.base_url
+        if settings.ENV.lower() == "production":
+            backend_url_str = str(backend_url).rstrip('/')
+        else:
+            backend_url_str = "http://localhost:8000"
+        
+        redirect_uri = settings.GITHUB_REDIRECT_URI or f"{backend_url_str}/auth/github/callback"
+        
+        # Register GitHub OAuth if not already registered
+        try:
+            _ = oauth_instance.github
+        except (AttributeError, KeyError):
+            oauth_instance.register(
+                name="github",
+                client_id=settings.GITHUB_CLIENT_ID,
+                client_secret=settings.GITHUB_CLIENT_SECRET,
+                access_token_url="https://github.com/login/oauth/access_token",
+                authorize_url="https://github.com/login/oauth/authorize",
+                api_base_url="https://api.github.com/",
+                client_kwargs={
+                    "scope": "user:email"
+                }
+            )
+        
+        return await oauth_instance.github.authorize_redirect(request, redirect_uri)
+    except HTTPException:
+        raise
+    except Exception as e:
+        import traceback
+        error_detail = f"OAuth error: {str(e)}\n{traceback.format_exc()}"
+        raise HTTPException(status_code=500, detail=error_detail)
+
+
+@router.get("/github/callback")
+async def github_callback(request: Request, db: Session = Depends(get_db)):
+    """Handle GitHub OAuth callback."""
+    oauth_instance = get_oauth()
+    
+    if not settings.GITHUB_CLIENT_ID or not settings.GITHUB_CLIENT_SECRET:
+        raise HTTPException(status_code=500, detail="GitHub OAuth not configured")
+    
+    # Ensure GitHub OAuth is registered
+    try:
+        _ = oauth_instance.github
+    except (AttributeError, KeyError):
+        oauth_instance.register(
+            name="github",
+            client_id=settings.GITHUB_CLIENT_ID,
+            client_secret=settings.GITHUB_CLIENT_SECRET,
+            access_token_url="https://github.com/login/oauth/access_token",
+            authorize_url="https://github.com/login/oauth/authorize",
+            api_base_url="https://api.github.com/",
+            client_kwargs={
+                "scope": "user:email"
+            }
+        )
+    
+    try:
+        token = await oauth_instance.github.authorize_access_token(request)
+        access_token = token.get("access_token")
+        
+        # Fetch user info from GitHub API
+        async with httpx.AsyncClient() as client:
+            resp = await client.get(
+                "https://api.github.com/user",
+                headers={"Authorization": f"Bearer {access_token}"}
+            )
+            user_info = resp.json()
+            
+            # Get email (may need to fetch from emails endpoint)
+            email = user_info.get("email")
+            if not email:
+                # Try to get primary email from emails endpoint
+                emails_resp = await client.get(
+                    "https://api.github.com/user/emails",
+                    headers={"Authorization": f"Bearer {access_token}"}
+                )
+                emails = emails_resp.json()
+                primary_email = next((e.get("email") for e in emails if e.get("primary")), None)
+                email = primary_email or (emails[0].get("email") if emails else None)
+        
+        provider_id = str(user_info.get("id", ""))
+        name = user_info.get("name") or user_info.get("login")
+        username = user_info.get("login")
+        
+        if not email:
+            raise HTTPException(status_code=400, detail="Email not provided by GitHub")
+        
+        # Get or create user
+        user = get_or_create_oauth_user(
+            db=db,
+            email=email,
+            provider="github",
+            provider_id=provider_id,
+            name=name,
+            username=username
+        )
+        
+        # Create JWT token
+        token = create_access_token({"sub": str(user.id)})
+        
+        # Create redirect response
+        redirect_url = f"{settings.FRONTEND_URL}/dashboard"
+        response = RedirectResponse(url=redirect_url, status_code=302)
+        
+        # Set cookie
+        set_auth_cookie(response, token)
+        
+        return response
+        
+    except OAuthError as e:
+        raise HTTPException(status_code=400, detail=f"OAuth error: {str(e)}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Authentication failed: {str(e)}")
 
 
 
