@@ -6,6 +6,7 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTheme } from "@/context/ThemeContext";
 import Input from "@/components/ui/Input";
+import PasswordInput from "@/components/ui/PasswordInput";
 import Button from "@/components/ui/Button";
 
 const RegisterSchema = z
@@ -27,10 +28,17 @@ export default function RegisterForm() {
     const {
         register,
         handleSubmit,
+        watch,
         formState: { errors, isSubmitting },
     } = useForm<RegisterFields>({
         resolver: zodResolver(RegisterSchema),
+        mode: "onChange", // Enable real-time validation
     });
+
+    // Watch password fields for real-time mismatch detection
+    const password = watch("password");
+    const confirmPassword = watch("confirm");
+    const showMismatchError = confirmPassword && password && password !== confirmPassword;
 
     const onSubmit = async (data: RegisterFields) => {
         const isEmail = data.emailOrUsername.includes("@");
@@ -85,23 +93,33 @@ export default function RegisterForm() {
             </div>
 
             <div className="space-y-1">
-                <Input placeholder="Password" type="password" {...register("password")} />
+                <PasswordInput 
+                    placeholder="Password" 
+                    {...register("password")}
+                    className={errors.password || showMismatchError ? 
+                        (theme === "dark" ? "border-red-500/50 focus:border-red-500 focus:ring-red-500/20" : "border-red-500 focus:border-red-500 focus:ring-red-500/20") 
+                        : ""
+                    }
+                />
                 {errors.password && (
-                    <p className={`text-sm mt-1 ml-1 ${theme === "dark" ? "text-red-400" : "text-red-600"}`}>
+                    <p className={`text-sm mt-1 ml-1 font-medium ${theme === "dark" ? "text-red-400" : "text-red-600"}`}>
                         {errors.password.message}
                     </p>
                 )}
             </div>
 
             <div className="space-y-1">
-                <Input
+                <PasswordInput
                     placeholder="Confirm Password"
-                    type="password"
                     {...register("confirm")}
+                    className={errors.confirm || showMismatchError ? 
+                        (theme === "dark" ? "border-red-500/50 focus:border-red-500 focus:ring-red-500/20" : "border-red-500 focus:border-red-500 focus:ring-red-500/20") 
+                        : ""
+                    }
                 />
-                {errors.confirm && (
-                    <p className={`text-sm mt-1 ml-1 ${theme === "dark" ? "text-red-400" : "text-red-600"}`}>
-                        {errors.confirm.message}
+                {(errors.confirm || showMismatchError) && (
+                    <p className={`text-sm mt-1 ml-1 font-medium ${theme === "dark" ? "text-red-400" : "text-red-600"}`}>
+                        {errors.confirm?.message || "Passwords do not match"}
                     </p>
                 )}
             </div>

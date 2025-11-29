@@ -6,6 +6,7 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTheme } from "@/context/ThemeContext";
 import Input from "@/components/ui/Input";
+import PasswordInput from "@/components/ui/PasswordInput";
 import Button from "@/components/ui/Button";
 
 const LoginSchema = z.object({
@@ -72,7 +73,7 @@ export default function LoginForm() {
             </div>
 
             <div className="space-y-1">
-                <Input placeholder="Password" type="password" {...register("password")} />
+                <PasswordInput placeholder="Password" {...register("password")} />
                 {errors.password && (
                     <p className={`text-sm mt-1 ml-1 ${theme === "dark" ? "text-red-400" : "text-red-600"}`}>
                         {errors.password.message}
