@@ -9,10 +9,10 @@ const Input = forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTMLInputEl
         return (
             <input
                 ref={ref}
-                className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring transition-colors ${
+                className={`w-full border rounded-lg px-4 py-3 focus:outline-none focus:ring-2 transition-all duration-200 ${
                     theme === "dark"
-                        ? "bg-gray-800 border-gray-700 text-white placeholder-gray-500 focus:border-gray-600"
-                        : "bg-white border-gray-300 text-black placeholder-gray-400 focus:border-gray-400"
+                        ? "bg-gray-800/50 border-gray-700/50 text-white placeholder-gray-500 focus:border-blue-500/50 focus:ring-blue-500/20 hover:border-gray-600"
+                        : "bg-white border-gray-300 text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:ring-blue-500/20 hover:border-gray-400 shadow-sm"
                 } ${className}`}
                 {...props}
             />

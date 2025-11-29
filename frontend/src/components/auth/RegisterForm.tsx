@@ -65,35 +65,49 @@ export default function RegisterForm() {
     };
 
     return (
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <Input placeholder="Full Name" {...register("name")} />
-            {errors.name && (
-                <p className={`text-sm ${theme === "dark" ? "text-red-400" : "text-red-600"}`}>{errors.name.message}</p>
-            )}
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+            <div className="space-y-1">
+                <Input placeholder="Full Name" {...register("name")} />
+                {errors.name && (
+                    <p className={`text-sm mt-1 ml-1 ${theme === "dark" ? "text-red-400" : "text-red-600"}`}>
+                        {errors.name.message}
+                    </p>
+                )}
+            </div>
 
-            <Input placeholder="Email or Username" {...register("emailOrUsername")} />
-            {errors.emailOrUsername && (
-                <p className={`text-sm ${theme === "dark" ? "text-red-400" : "text-red-600"}`}>
-                    {errors.emailOrUsername.message}
-                </p>
-            )}
+            <div className="space-y-1">
+                <Input placeholder="Email or Username" {...register("emailOrUsername")} />
+                {errors.emailOrUsername && (
+                    <p className={`text-sm mt-1 ml-1 ${theme === "dark" ? "text-red-400" : "text-red-600"}`}>
+                        {errors.emailOrUsername.message}
+                    </p>
+                )}
+            </div>
 
-            <Input placeholder="Password" type="password" {...register("password")} />
-            {errors.password && (
-                <p className={`text-sm ${theme === "dark" ? "text-red-400" : "text-red-600"}`}>{errors.password.message}</p>
-            )}
+            <div className="space-y-1">
+                <Input placeholder="Password" type="password" {...register("password")} />
+                {errors.password && (
+                    <p className={`text-sm mt-1 ml-1 ${theme === "dark" ? "text-red-400" : "text-red-600"}`}>
+                        {errors.password.message}
+                    </p>
+                )}
+            </div>
 
-            <Input
-                placeholder="Confirm Password"
-                type="password"
-                {...register("confirm")}
-            />
-            {errors.confirm && (
-                <p className={`text-sm ${theme === "dark" ? "text-red-400" : "text-red-600"}`}>{errors.confirm.message}</p>
-            )}
+            <div className="space-y-1">
+                <Input
+                    placeholder="Confirm Password"
+                    type="password"
+                    {...register("confirm")}
+                />
+                {errors.confirm && (
+                    <p className={`text-sm mt-1 ml-1 ${theme === "dark" ? "text-red-400" : "text-red-600"}`}>
+                        {errors.confirm.message}
+                    </p>
+                )}
+            </div>
 
             <Button disabled={isSubmitting} type="submit">
-                Create account
+                {isSubmitting ? "Creating account..." : "Create Account"}
             </Button>
         </form>
     );

@@ -6,10 +6,10 @@ export default function Button({ children, ...props }: React.ButtonHTMLAttribute
     const { theme } = useTheme();
     return (
         <button
-            className={`w-full rounded-md py-2 px-4 hover:opacity-90 disabled:opacity-50 transition-colors ${
+            className={`w-full rounded-lg py-3 px-4 font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg hover:shadow-xl ${
                 theme === "dark"
-                    ? "bg-blue-600 text-white hover:bg-blue-700"
-                    : "bg-black text-white hover:bg-gray-800"
+                    ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700"
+                    : "bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700"
             }`}
             {...props}
         >

@@ -10,22 +10,46 @@ export default function RegisterPage() {
     const { theme } = useTheme();
     
     return (
-        <div className="w-full max-w-md">
-            <h1 className={`text-3xl font-extrabold mb-6 text-center transition-colors ${
-                theme === "dark" ? "text-blue-400" : "text-blue-600"
-            }`}>
-                Create Your Account
-            </h1>
+        <div className="w-full">
+            <div className="text-center mb-8">
+                <h1 className={`text-4xl font-bold mb-2 bg-gradient-to-r bg-clip-text text-transparent transition-all duration-300 ${
+                    theme === "dark" 
+                        ? "from-blue-400 to-purple-400" 
+                        : "from-blue-600 to-purple-600"
+                }`}>
+                    Create Your Account
+                </h1>
+                <p className={`text-sm mt-2 transition-colors ${
+                    theme === "dark" ? "text-gray-400" : "text-gray-600"
+                }`}>
+                    Join Profit Path and start your trading journey
+                </p>
+            </div>
 
             <RegisterForm />
 
-            <div className="text-center mt-6">
+            <div className="text-center mt-8">
+                <p className={`text-sm mb-2 transition-colors ${
+                    theme === "dark" ? "text-gray-400" : "text-gray-600"
+                }`}>
+                    Already have an account?{" "}
+                    <Link
+                        href="/login"
+                        className={`font-semibold hover:underline transition ${
+                            theme === "dark"
+                                ? "text-blue-400 hover:text-blue-300"
+                                : "text-blue-600 hover:text-blue-800"
+                        }`}
+                    >
+                        Sign in
+                    </Link>
+                </p>
                 <Link
                     href="/"
-                    className={`hover:underline transition ${
+                    className={`text-sm hover:underline transition inline-flex items-center gap-1 ${
                         theme === "dark"
-                            ? "text-blue-400 hover:text-blue-300"
-                            : "text-blue-600 hover:text-blue-800"
+                            ? "text-gray-500 hover:text-gray-400"
+                            : "text-gray-600 hover:text-gray-800"
                     }`}
                 >
                     ← Back to Home

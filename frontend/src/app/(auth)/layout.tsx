@@ -11,24 +11,36 @@ export default function AuthLayout({
     const { theme, toggleTheme } = useTheme();
     
     return (
-        <div className={`min-h-screen flex items-center justify-center transition-colors duration-500 ${
+        <div className={`min-h-screen flex items-center justify-center transition-colors duration-500 relative overflow-hidden ${
             theme === "dark"
-                ? "bg-gradient-to-b from-black via-gray-950 to-black"
-                : "bg-gray-100"
+                ? "bg-gradient-to-br from-gray-950 via-black to-gray-900"
+                : "bg-gradient-to-br from-blue-50 via-white to-purple-50"
         }`}>
-            <div className={`w-full max-w-md p-6 rounded-xl shadow-md transition-colors duration-500 ${
+            {/* Animated background elements */}
+            <div className={`absolute inset-0 overflow-hidden pointer-events-none ${
+                theme === "dark" ? "opacity-20" : "opacity-10"
+            }`}>
+                <div className={`absolute top-1/4 left-1/4 w-96 h-96 rounded-full blur-3xl ${
+                    theme === "dark" ? "bg-blue-500" : "bg-blue-400"
+                } animate-pulse`} style={{ animationDuration: '4s' }}></div>
+                <div className={`absolute bottom-1/4 right-1/4 w-96 h-96 rounded-full blur-3xl ${
+                    theme === "dark" ? "bg-purple-500" : "bg-purple-400"
+                } animate-pulse`} style={{ animationDuration: '6s', animationDelay: '1s' }}></div>
+            </div>
+
+            <div className={`w-full max-w-md p-8 rounded-2xl shadow-2xl transition-all duration-500 relative z-10 backdrop-blur-sm ${
                 theme === "dark"
-                    ? "bg-gray-900 border border-gray-800"
-                    : "bg-white"
+                    ? "bg-gray-900/90 border border-gray-800/50 shadow-blue-500/10"
+                    : "bg-white/90 border border-gray-200/50 shadow-xl"
             }`}>
                 {/* Dark mode toggle */}
-                <div className="flex justify-end mb-4">
+                <div className="flex justify-end mb-6">
                     <button
                         onClick={toggleTheme}
-                        className={`p-2 rounded-xl transition-all ${
+                        className={`p-2.5 rounded-xl transition-all duration-300 hover:scale-110 ${
                             theme === 'dark'
-                                ? 'bg-white/10 border border-white/20 hover:bg-white/15 text-white'
-                                : 'bg-[#e8ebef] border border-[#2d3748]/20 hover:bg-[#dfe3e8] text-[#2d3748]'
+                                ? 'bg-white/10 border border-white/20 hover:bg-white/15 text-white hover:border-white/30'
+                                : 'bg-gray-100 border border-gray-200 hover:bg-gray-200 text-gray-700 hover:border-gray-300'
                         }`}
                         aria-label="Toggle theme"
                     >
