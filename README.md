@@ -302,6 +302,18 @@ COOKIE_DOMAIN=
 
 # OpenAI API (Required for Market Chat feature)
 OPENAI_API_KEY=sk-your-openai-api-key-here
+
+# OAuth Configuration (Required for Google/GitHub login)
+GOOGLE_CLIENT_ID=your-google-client-id.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=your-google-client-secret
+GOOGLE_REDIRECT_URI=https://your-railway-backend.up.railway.app/auth/google/callback
+
+GITHUB_CLIENT_ID=your-github-client-id
+GITHUB_CLIENT_SECRET=your-github-client-secret
+GITHUB_REDIRECT_URI=https://your-railway-backend.up.railway.app/auth/github/callback
+
+# Frontend URL (for OAuth redirects after authentication)
+FRONTEND_URL=https://your-vercel-app.vercel.app
 ```
 
 ---
@@ -394,8 +406,44 @@ Ai-Trading-Assistant/
 - [ ] Set `COOKIE_SECURE=True` and `COOKIE_SAMESITE=none`
 - [ ] Use strong `JWT_SECRET_KEY`
 - [ ] Update CORS settings
+- [ ] **Set OAuth environment variables** (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`)
+- [ ] **Configure OAuth redirect URIs** in Google/GitHub OAuth apps to match production backend URL
+- [ ] Set `FRONTEND_URL` to production frontend URL
 - [ ] Test authentication flow
 - [ ] Verify cookie forwarding
+
+### OAuth Configuration Guide
+
+#### Google OAuth Setup
+
+1. **Create OAuth Credentials:**
+   - Go to [Google Cloud Console](https://console.cloud.google.com/)
+   - Create a new project or select an existing one
+   - Enable Google+ API
+   - Go to "Credentials" → "Create Credentials" → "OAuth client ID"
+   - Choose "Web application"
+   - Add authorized redirect URIs:
+     - Local: `http://localhost:8000/auth/google/callback`
+     - Production: `https://your-railway-backend.up.railway.app/auth/google/callback`
+
+2. **Set Environment Variables in Railway:**
+   - `GOOGLE_CLIENT_ID`: Your Google OAuth client ID
+   - `GOOGLE_CLIENT_SECRET`: Your Google OAuth client secret
+   - `GOOGLE_REDIRECT_URI`: `https://your-railway-backend.up.railway.app/auth/google/callback` (optional, auto-constructed if not set)
+
+#### GitHub OAuth Setup
+
+1. **Create OAuth App:**
+   - Go to GitHub → Settings → Developer settings → OAuth Apps
+   - Click "New OAuth App"
+   - Set Authorization callback URL:
+     - Local: `http://localhost:8000/auth/github/callback`
+     - Production: `https://your-railway-backend.up.railway.app/auth/github/callback`
+
+2. **Set Environment Variables in Railway:**
+   - `GITHUB_CLIENT_ID`: Your GitHub OAuth app client ID
+   - `GITHUB_CLIENT_SECRET`: Your GitHub OAuth app client secret
+   - `GITHUB_REDIRECT_URI`: `https://your-railway-backend.up.railway.app/auth/github/callback` (optional, auto-constructed if not set)
 
 ---
 

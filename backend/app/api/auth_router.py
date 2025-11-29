@@ -289,7 +289,10 @@ async def google_login(request: Request):
         oauth_instance = get_oauth()
         
         if not settings.GOOGLE_CLIENT_ID or not settings.GOOGLE_CLIENT_SECRET:
-            raise HTTPException(status_code=500, detail="Google OAuth not configured")
+            raise HTTPException(
+                status_code=500, 
+                detail="Google OAuth not configured. Please set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET environment variables."
+            )
         
         # Determine backend URL for callback
         backend_url = request.base_url
@@ -329,7 +332,10 @@ async def google_callback(request: Request, db: Session = Depends(get_db)):
     oauth_instance = get_oauth()
     
     if not settings.GOOGLE_CLIENT_ID or not settings.GOOGLE_CLIENT_SECRET:
-        raise HTTPException(status_code=500, detail="Google OAuth not configured")
+        raise HTTPException(
+            status_code=500, 
+            detail="Google OAuth not configured. Please set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET environment variables."
+        )
     
     # Ensure Google OAuth is registered
     try:
@@ -407,7 +413,10 @@ async def github_login(request: Request):
         oauth_instance = get_oauth()
         
         if not settings.GITHUB_CLIENT_ID or not settings.GITHUB_CLIENT_SECRET:
-            raise HTTPException(status_code=500, detail="GitHub OAuth not configured")
+            raise HTTPException(
+                status_code=500, 
+                detail="GitHub OAuth not configured. Please set GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET environment variables."
+            )
         
         # Determine backend URL for callback
         backend_url = request.base_url
@@ -449,7 +458,10 @@ async def github_callback(request: Request, db: Session = Depends(get_db)):
     oauth_instance = get_oauth()
     
     if not settings.GITHUB_CLIENT_ID or not settings.GITHUB_CLIENT_SECRET:
-        raise HTTPException(status_code=500, detail="GitHub OAuth not configured")
+        raise HTTPException(
+            status_code=500, 
+            detail="GitHub OAuth not configured. Please set GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET environment variables."
+        )
     
     # Ensure GitHub OAuth is registered
     try:
