@@ -5,6 +5,7 @@ import { useTheme } from '@/context/ThemeContext'
 import { useSearchParams } from 'next/navigation'
 import CandlestickChart from '@/components/CandlestickChart'
 import { X, Plus, TrendingUp, TrendingDown, AlertCircle } from 'lucide-react'
+import { resolveTicker } from '@/lib/searchStock'
 
 interface PatternTrendsItem {
   id: number
@@ -166,9 +167,9 @@ export default function PatternTrendsPage() {
 
   // Add stock to pattern trends
   const addStock = async (symbol?: string) => {
-    const sym = (symbol || newSymbol.trim().toUpperCase()).trim()
-    if (!sym) {
-      setError('Please enter a stock symbol.')
+    const query = (symbol || newSymbol.trim()).trim()
+    if (!query) {
+      setError('Please enter a stock symbol or company name.')
       return
     }
 
@@ -180,12 +181,10 @@ export default function PatternTrendsPage() {
     setError('')
     setLoading(true)
     try {
-      // Validate symbol with Polygon
-      const checkRes = await fetch(
-        `https://api.polygon.io/v3/reference/tickers/${sym}?apiKey=${polygonKey}`
-      )
-      if (!checkRes.ok || !(await checkRes.json())?.results?.ticker) {
-        throw new Error('Invalid ticker.')
+      // Resolve company name to ticker if needed
+      const sym = await resolveTicker(query, polygonKey)
+      if (!sym) {
+        throw new Error("Stock not found. Try 'Apple' or 'AAPL'")
       }
 
       // Add to backend
@@ -599,9 +598,9 @@ export default function PatternTrendsPage() {
           <div className="flex gap-3 items-center">
             <input
               type="text"
-              placeholder="Enter stock symbol (e.g. AAPL)"
+              placeholder="Enter stock symbol or company name (e.g. AAPL or Apple)"
               value={newSymbol}
-              onChange={(e) => setNewSymbol(e.target.value.toUpperCase())}
+              onChange={(e) => setNewSymbol(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
                   e.preventDefault()

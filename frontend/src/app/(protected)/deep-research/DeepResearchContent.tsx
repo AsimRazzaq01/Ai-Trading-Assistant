@@ -13,6 +13,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { fetchStockData } from "@/lib/fetchStockData";
+import { resolveTicker } from "@/lib/searchStock";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 
@@ -163,8 +164,8 @@ export default function DeepResearchContent() {
   };
 
   /* Main Analysis Logic */
-  const analyzeStockWithSymbol = async (sym: string) => {
-    if (!sym) return;
+  const analyzeStockWithSymbol = async (query: string) => {
+    if (!query) return;
 
     if (!polygonKey) {
       addToast("Polygon API key not configured.", "error");
@@ -180,6 +181,14 @@ export default function DeepResearchContent() {
     setResults(null);
 
     try {
+      // Resolve company name to ticker if needed
+      const sym = await resolveTicker(query, polygonKey);
+      if (!sym) {
+        addToast("Stock not found. Try 'Apple' or 'AAPL'", "error");
+        setLoading(false);
+        return;
+      }
+
       let from = new Date();
       const today = new Date().toISOString().split("T")[0];
       if (rangeMode === "preset") from.setDate(from.getDate() - chartRange);
@@ -368,9 +377,9 @@ Provide 3-5 trading strategy options/opportunities. Format your response as a JS
   };
 
   const analyzeStock = async () => {
-    const sym = symbol.trim().toUpperCase();
-    if (!sym) return;
-    await analyzeStockWithSymbol(sym);
+    const query = symbol.trim();
+    if (!query) return;
+    await analyzeStockWithSymbol(query);
   };
 
   // Check if symbol is in watchlist or My Assets
@@ -429,12 +438,12 @@ Provide 3-5 trading strategy options/opportunities. Format your response as a JS
   useEffect(() => {
     const urlSymbol = searchParams.get("symbol");
     if (urlSymbol) {
-      const sym = urlSymbol.trim().toUpperCase();
-      setSymbol(sym);
+      const query = urlSymbol.trim();
+      setSymbol(query);
       // Auto-analyze if symbol is provided via URL
-      if (sym && polygonKey) {
+      if (query && polygonKey) {
         setTimeout(() => {
-          analyzeStockWithSymbol(sym);
+          analyzeStockWithSymbol(query);
         }, 100);
       }
     }
@@ -733,14 +742,14 @@ Provide 3-5 trading strategy options/opportunities. Format your response as a JS
         <p className={`mb-8 text-sm opacity-80 ${
           theme === "dark" ? "text-gray-300" : "text-gray-700"
         }`}>
-          Enter a ticker symbol to fetch data, detect chart patterns, and generate an AI-driven projection.
+          Enter a ticker symbol or company name to fetch data, detect chart patterns, and generate an AI-driven projection.
         </p>
 
         {/* Controls */}
         <div className="flex flex-wrap gap-3 mb-10 items-center">
           <input
             type="text"
-            placeholder="Enter stock symbol (e.g. TSLA)"
+            placeholder="Enter stock symbol or company name (e.g. TSLA or Tesla)"
             value={symbol}
             onChange={(e) => setSymbol(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && analyzeStock()}

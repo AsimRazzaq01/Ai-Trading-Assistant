@@ -4,6 +4,7 @@
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useTheme } from "@/context/ThemeContext";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
 
@@ -22,6 +23,7 @@ const RegisterSchema = z
 type RegisterFields = z.infer<typeof RegisterSchema>;
 
 export default function RegisterForm() {
+    const { theme } = useTheme();
     const {
         register,
         handleSubmit,
@@ -66,19 +68,19 @@ export default function RegisterForm() {
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <Input placeholder="Full Name" {...register("name")} />
             {errors.name && (
-                <p className="text-red-600 text-sm">{errors.name.message}</p>
+                <p className={`text-sm ${theme === "dark" ? "text-red-400" : "text-red-600"}`}>{errors.name.message}</p>
             )}
 
             <Input placeholder="Email or Username" {...register("emailOrUsername")} />
             {errors.emailOrUsername && (
-                <p className="text-red-600 text-sm">
+                <p className={`text-sm ${theme === "dark" ? "text-red-400" : "text-red-600"}`}>
                     {errors.emailOrUsername.message}
                 </p>
             )}
 
             <Input placeholder="Password" type="password" {...register("password")} />
             {errors.password && (
-                <p className="text-red-600 text-sm">{errors.password.message}</p>
+                <p className={`text-sm ${theme === "dark" ? "text-red-400" : "text-red-600"}`}>{errors.password.message}</p>
             )}
 
             <Input
@@ -87,7 +89,7 @@ export default function RegisterForm() {
                 {...register("confirm")}
             />
             {errors.confirm && (
-                <p className="text-red-600 text-sm">{errors.confirm.message}</p>
+                <p className={`text-sm ${theme === "dark" ? "text-red-400" : "text-red-600"}`}>{errors.confirm.message}</p>
             )}
 
             <Button disabled={isSubmitting} type="submit">

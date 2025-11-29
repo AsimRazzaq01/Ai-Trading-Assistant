@@ -11,6 +11,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { fetchStockData } from "@/lib/fetchStockData";
+import { resolveTicker } from "@/lib/searchStock";
 
 /* ───────────────── Helper UI ───────────────── */
 
@@ -365,8 +366,8 @@ export default function MyAssetsPage() {
 
   /* ─────────────── Add asset ─────────────── */
   const addAsset = async () => {
-    const symbol = newAsset.trim().toUpperCase();
-    if (!symbol) return;
+    const query = newAsset.trim();
+    if (!query) return;
 
     if (!polygonKey) {
       addToast("Polygon API key not configured.", "error");
@@ -377,10 +378,11 @@ export default function MyAssetsPage() {
     setError("");
 
     try {
-      const valid = await validateTicker(symbol);
-      if (!valid) {
-        addToast("Stock doesn't exist.", "error");
-        setError("Invalid or unknown stock symbol.");
+      // Resolve company name to ticker if needed
+      const symbol = await resolveTicker(query, polygonKey);
+      if (!symbol) {
+        addToast("Stock not found. Try 'Apple' or 'AAPL'", "error");
+        setError("Stock not found. Try 'Apple' or 'AAPL'");
         return;
       }
 
@@ -546,7 +548,7 @@ export default function MyAssetsPage() {
           <div className="flex items-center gap-2">
             <input
               type="text"
-              placeholder="Enter stock symbol (e.g. AAPL)"
+              placeholder="Enter stock symbol or company name (e.g. AAPL or Apple)"
               value={newAsset}
               onChange={(e) => setNewAsset(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && addAsset()}

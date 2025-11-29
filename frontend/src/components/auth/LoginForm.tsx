@@ -4,6 +4,7 @@
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useTheme } from "@/context/ThemeContext";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
 
@@ -15,6 +16,7 @@ const LoginSchema = z.object({
 type LoginFields = z.infer<typeof LoginSchema>;
 
 export default function LoginForm() {
+    const { theme } = useTheme();
     const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<LoginFields>({
         resolver: zodResolver(LoginSchema),
     });
@@ -62,25 +64,33 @@ export default function LoginForm() {
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <Input placeholder="Email or Username" {...register("identifier")} />
             {errors.identifier && (
-                <p className="text-red-600 text-sm">{errors.identifier.message}</p>
+                <p className={`text-sm ${theme === "dark" ? "text-red-400" : "text-red-600"}`}>{errors.identifier.message}</p>
             )}
 
             <Input placeholder="Password" type="password" {...register("password")} />
             {errors.password && (
-                <p className="text-red-600 text-sm">{errors.password.message}</p>
+                <p className={`text-sm ${theme === "dark" ? "text-red-400" : "text-red-600"}`}>{errors.password.message}</p>
             )}
 
             <Button disabled={isSubmitting} type="submit">Login</Button>
 
-            <div className="text-center text-sm text-gray-500">or</div>
+            <div className={`text-center text-sm ${theme === "dark" ? "text-gray-400" : "text-gray-500"}`}>or</div>
 
             {/* ✅ Keep OAuth URLs pointing directly to backend */}
             <div className="flex gap-2">
-                <a className="w-1/2 text-center border rounded-md py-2"
+                <a className={`w-1/2 text-center border rounded-md py-2 transition ${
+                    theme === "dark"
+                        ? "border-gray-700 hover:bg-gray-800 text-gray-300"
+                        : "border-gray-300 hover:bg-gray-50 text-gray-700"
+                }`}
                    href={`${process.env.NEXT_PUBLIC_API_URL_BROWSER || "http://localhost:8000"}/auth/google/login`}>
                     Continue with Google
                 </a>
-                <a className="w-1/2 text-center border rounded-md py-2"
+                <a className={`w-1/2 text-center border rounded-md py-2 transition ${
+                    theme === "dark"
+                        ? "border-gray-700 hover:bg-gray-800 text-gray-300"
+                        : "border-gray-300 hover:bg-gray-50 text-gray-700"
+                }`}
                    href={`${process.env.NEXT_PUBLIC_API_URL_BROWSER || "http://localhost:8000"}/auth/github/login`}>
                     Continue with GitHub
                 </a>

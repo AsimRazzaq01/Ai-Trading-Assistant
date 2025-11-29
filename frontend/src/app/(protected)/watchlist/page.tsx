@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useTheme } from "@/context/ThemeContext";
 import { fetchStockSummary, StockSummary } from "@/lib/fetchStockSummary";
+import { resolveTicker } from "@/lib/searchStock";
 
 interface WatchlistItem {
   id: number;
@@ -106,15 +107,9 @@ export default function WatchlistPage() {
 
   /* ─────────────── Add / Remove ─────────────── */
   const addTicker = async () => {
-    const symbol = newTicker.trim().toUpperCase();
-    if (!symbol) {
-      setError("Please enter a stock symbol.");
-      return;
-    }
-    
-    // Check if already in local state
-    if (tickers.includes(symbol)) {
-      setError("Ticker already in watchlist.");
+    const query = newTicker.trim();
+    if (!query) {
+      setError("Please enter a stock symbol or company name.");
       return;
     }
     
@@ -126,6 +121,19 @@ export default function WatchlistPage() {
     setError("");
     setLoading(true);
     try {
+      // Resolve company name to ticker if needed
+      const symbol = await resolveTicker(query, polygonKey);
+      if (!symbol) {
+        throw new Error("Stock not found. Try 'Apple' or 'AAPL'");
+      }
+      
+      // Check if already in local state
+      if (tickers.includes(symbol)) {
+        setError("Ticker already in watchlist.");
+        setLoading(false);
+        return;
+      }
+      
       // ✅ Quick validation via Polygon API
       const check = await fetchStockSummary([symbol], polygonKey);
       if (check.length === 0) {
@@ -221,7 +229,7 @@ export default function WatchlistPage() {
           >
             <input
               type="text"
-              placeholder="Enter ticker (e.g. AAPL)"
+              placeholder="Enter ticker or company name (e.g. AAPL or Apple)"
               value={newTicker}
               onChange={(e) => setNewTicker(e.target.value)}
               onKeyDown={(e) => {

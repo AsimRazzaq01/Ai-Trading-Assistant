@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { MessageCircle, X, Loader2 } from 'lucide-react'
 import { useTheme } from '@/context/ThemeContext'
+import { resolveTicker } from '@/lib/searchStock'
 
 export default function FloatingWidget() {
   const { theme } = useTheme()
@@ -14,7 +15,16 @@ export default function FloatingWidget() {
   const fetchQuote = async () => {
     try {
       setLoading(true)
-      const res = await fetch(`/api/quote?symbol=${encodeURIComponent(symbol)}`, { cache: 'no-store' })
+      const polygonKey = process.env.NEXT_PUBLIC_POLYGON_API_KEY || ''
+      
+      // Resolve company name to ticker if needed
+      const ticker = await resolveTicker(symbol, polygonKey)
+      if (!ticker) {
+        setData({ error: 'Stock not found. Try "Apple" or "AAPL"' })
+        return
+      }
+
+      const res = await fetch(`/api/quote?symbol=${encodeURIComponent(ticker)}`, { cache: 'no-store' })
       const json = await res.json()
       setData(json)
     } catch (e) {
@@ -62,8 +72,8 @@ export default function FloatingWidget() {
           <div className="flex gap-2 mb-3">
             <input
               value={symbol}
-              onChange={(e) => setSymbol(e.target.value.toUpperCase())}
-              placeholder="e.g., AAPL"
+              onChange={(e) => setSymbol(e.target.value)}
+              placeholder="e.g., AAPL or Apple"
               className={`w-full px-3 py-2 rounded-lg border outline-none transition ${
                 theme === 'dark'
                   ? 'bg-gray-800/50 border-gray-700 text-white placeholder-gray-500 focus:border-gray-600'
