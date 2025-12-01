@@ -124,3 +124,4 @@ GITHUB_CLIENT_SECRET=your-github-prod-client-secret  # Different from dev!
 FRONTEND_URL=https://your-frontend.vercel.app
 ```
 
+
