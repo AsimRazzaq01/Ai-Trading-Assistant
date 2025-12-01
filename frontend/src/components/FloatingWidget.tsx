@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { MessageCircle, X, Loader2 } from 'lucide-react'
 import { useTheme } from '@/context/ThemeContext'
-import { resolveTicker } from '@/lib/searchStock'
+import StockSearchAutocomplete from '@/components/StockSearchAutocomplete'
 
 export default function FloatingWidget() {
   const { theme } = useTheme()
@@ -12,19 +12,18 @@ export default function FloatingWidget() {
   const [loading, setLoading] = useState(false)
   const [data, setData] = useState<any>(null)
 
-  const fetchQuote = async () => {
+  const fetchQuote = async (ticker?: string) => {
     try {
       setLoading(true)
       const polygonKey = process.env.NEXT_PUBLIC_POLYGON_API_KEY || ''
+      const symbolToUse = ticker || symbol
       
-      // Resolve company name to ticker if needed
-      const ticker = await resolveTicker(symbol, polygonKey)
-      if (!ticker) {
-        setData({ error: 'Stock not found. Try "Apple" or "AAPL"' })
+      if (!symbolToUse.trim()) {
+        setData({ error: 'Please enter a stock symbol or company name' })
         return
       }
 
-      const res = await fetch(`/api/quote?symbol=${encodeURIComponent(ticker)}`, { cache: 'no-store' })
+      const res = await fetch(`/api/quote?symbol=${encodeURIComponent(symbolToUse.toUpperCase())}`, { cache: 'no-store' })
       const json = await res.json()
       setData(json)
     } catch (e) {
@@ -32,6 +31,11 @@ export default function FloatingWidget() {
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleStockSelect = (ticker: string, name: string) => {
+    setSymbol(ticker)
+    fetchQuote(ticker)
   }
 
   return (
@@ -70,18 +74,17 @@ export default function FloatingWidget() {
             </button>
           </div>
           <div className="flex gap-2 mb-3">
-            <input
+            <StockSearchAutocomplete
               value={symbol}
-              onChange={(e) => setSymbol(e.target.value)}
+              onChange={setSymbol}
+              onSelect={handleStockSelect}
               placeholder="e.g., AAPL or Apple"
-              className={`w-full px-3 py-2 rounded-lg border outline-none transition ${
-                theme === 'dark'
-                  ? 'bg-gray-800/50 border-gray-700 text-white placeholder-gray-500 focus:border-gray-600'
-                  : 'bg-[#f0f2f5] border-[#2d3748]/20 text-[#2d3748] placeholder-gray-400 focus:border-[#2d3748]/30'
-              }`}
+              disabled={loading}
+              polygonKey={process.env.NEXT_PUBLIC_POLYGON_API_KEY || ''}
+              className="flex-1"
             />
             <button
-              onClick={fetchQuote}
+              onClick={() => fetchQuote()}
               disabled={loading}
               className={`px-3 py-2 rounded-lg border transition ${
                 theme === 'dark'

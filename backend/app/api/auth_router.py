@@ -294,14 +294,36 @@ async def google_login(request: Request):
                 detail="Google OAuth not configured. Please set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET environment variables."
             )
         
-        # Determine backend URL for callback
-        backend_url = request.base_url
+        # ✅ CRITICAL: In production, GOOGLE_REDIRECT_URI MUST be explicitly set
+        # and MUST exactly match what's registered in Google Cloud Console
         if settings.ENV.lower() == "production":
-            backend_url_str = str(backend_url).rstrip('/')
+            if not settings.GOOGLE_REDIRECT_URI:
+                raise HTTPException(
+                    status_code=500,
+                    detail=(
+                        "GOOGLE_REDIRECT_URI must be explicitly set in production. "
+                        "Set it to your exact Railway backend URL: https://your-backend.up.railway.app/auth/google/callback"
+                    )
+                )
+            redirect_uri = settings.GOOGLE_REDIRECT_URI.rstrip('/')
         else:
-            backend_url_str = "http://localhost:8000"
+            # Local development: construct from request or use explicit setting
+            if settings.GOOGLE_REDIRECT_URI:
+                redirect_uri = settings.GOOGLE_REDIRECT_URI.rstrip('/')
+            else:
+                backend_url_str = str(request.base_url).rstrip('/')
+                redirect_uri = f"{backend_url_str}/auth/google/callback"
         
-        redirect_uri = settings.GOOGLE_REDIRECT_URI or f"{backend_url_str}/auth/google/callback"
+        # Log the redirect URI being used (for debugging)
+        print(f"🔐 Google OAuth redirect URI: {redirect_uri}")
+        print(f"🔐 Environment: {settings.ENV}")
+        print(f"🔐 GOOGLE_CLIENT_ID: {settings.GOOGLE_CLIENT_ID[:20]}...")
+        
+        # ✅ Ensure session is initialized (SessionMiddleware should handle this, but we'll verify)
+        # The session is used by Authlib to store the OAuth state for CSRF protection
+        session = request.session
+        print(f"🔐 Session ID before OAuth: {session.get('_id', 'not set')}")
+        print(f"🔐 Session keys before redirect: {list(session.keys())}")
         
         # Register Google OAuth if not already registered
         try:
@@ -317,12 +339,21 @@ async def google_login(request: Request):
                 }
             )
         
-        return await oauth_instance.google.authorize_redirect(request, redirect_uri)
+        # ✅ Use authorize_redirect which will set the state in the session
+        # Create a response object to ensure session is saved
+        response = await oauth_instance.google.authorize_redirect(request, redirect_uri)
+        
+        # ✅ Explicitly ensure session is saved before redirect
+        # The session middleware should handle this, but we'll verify it's in the response
+        print(f"🔐 Session keys after authorize_redirect: {list(request.session.keys())}")
+        
+        return response
     except HTTPException:
         raise
     except Exception as e:
         import traceback
         error_detail = f"OAuth error: {str(e)}\n{traceback.format_exc()}"
+        print(f"❌ Google OAuth login error: {error_detail}")
         raise HTTPException(status_code=500, detail=error_detail)
 
 
@@ -336,6 +367,32 @@ async def google_callback(request: Request, db: Session = Depends(get_db)):
             status_code=500, 
             detail="Google OAuth not configured. Please set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET environment variables."
         )
+    
+    # ✅ Ensure redirect URI matches what was used in /google/login
+    if settings.ENV.lower() == "production":
+        if not settings.GOOGLE_REDIRECT_URI:
+            raise HTTPException(
+                status_code=500,
+                detail=(
+                    "GOOGLE_REDIRECT_URI must be explicitly set in production. "
+                    "Set it to your exact Railway backend URL: https://your-backend.up.railway.app/auth/google/callback"
+                )
+            )
+        redirect_uri = settings.GOOGLE_REDIRECT_URI.rstrip('/')
+    else:
+        if settings.GOOGLE_REDIRECT_URI:
+            redirect_uri = settings.GOOGLE_REDIRECT_URI.rstrip('/')
+        else:
+            backend_url_str = str(request.base_url).rstrip('/')
+            redirect_uri = f"{backend_url_str}/auth/google/callback"
+    
+    print(f"🔐 Google OAuth callback - redirect URI: {redirect_uri}")
+    
+    # ✅ Debug session state
+    session = request.session
+    print(f"🔐 Session ID in callback: {session.get('_id', 'not set')}")
+    print(f"🔐 Session keys in callback: {list(session.keys())}")
+    print(f"🔐 All cookies received: {list(request.cookies.keys())}")
     
     # Ensure Google OAuth is registered
     try:
@@ -352,6 +409,7 @@ async def google_callback(request: Request, db: Session = Depends(get_db)):
         )
     
     try:
+        # ✅ authorize_access_token will verify the state from the session
         token = await oauth_instance.google.authorize_access_token(request)
         user_info = token.get("userinfo")
         
@@ -418,14 +476,29 @@ async def github_login(request: Request):
                 detail="GitHub OAuth not configured. Please set GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET environment variables."
             )
         
-        # Determine backend URL for callback
-        backend_url = request.base_url
+        # ✅ CRITICAL: In production, GITHUB_REDIRECT_URI MUST be explicitly set
+        # and MUST exactly match what's registered in GitHub OAuth App settings
         if settings.ENV.lower() == "production":
-            backend_url_str = str(backend_url).rstrip('/')
+            if not settings.GITHUB_REDIRECT_URI:
+                raise HTTPException(
+                    status_code=500,
+                    detail=(
+                        "GITHUB_REDIRECT_URI must be explicitly set in production. "
+                        "Set it to your exact Railway backend URL: https://your-backend.up.railway.app/auth/github/callback"
+                    )
+                )
+            redirect_uri = settings.GITHUB_REDIRECT_URI.rstrip('/')
         else:
-            backend_url_str = "http://localhost:8000"
+            # Local development: construct from request or use explicit setting
+            if settings.GITHUB_REDIRECT_URI:
+                redirect_uri = settings.GITHUB_REDIRECT_URI.rstrip('/')
+            else:
+                backend_url_str = str(request.base_url).rstrip('/')
+                redirect_uri = f"{backend_url_str}/auth/github/callback"
         
-        redirect_uri = settings.GITHUB_REDIRECT_URI or f"{backend_url_str}/auth/github/callback"
+        # Log the redirect URI being used (for debugging)
+        print(f"🔐 GitHub OAuth redirect URI: {redirect_uri}")
+        print(f"🔐 Environment: {settings.ENV}")
         
         # Register GitHub OAuth if not already registered
         try:
@@ -449,6 +522,7 @@ async def github_login(request: Request):
     except Exception as e:
         import traceback
         error_detail = f"OAuth error: {str(e)}\n{traceback.format_exc()}"
+        print(f"❌ GitHub OAuth login error: {error_detail}")
         raise HTTPException(status_code=500, detail=error_detail)
 
 
@@ -462,6 +536,26 @@ async def github_callback(request: Request, db: Session = Depends(get_db)):
             status_code=500, 
             detail="GitHub OAuth not configured. Please set GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET environment variables."
         )
+    
+    # ✅ Ensure redirect URI matches what was used in /github/login
+    if settings.ENV.lower() == "production":
+        if not settings.GITHUB_REDIRECT_URI:
+            raise HTTPException(
+                status_code=500,
+                detail=(
+                    "GITHUB_REDIRECT_URI must be explicitly set in production. "
+                    "Set it to your exact Railway backend URL: https://your-backend.up.railway.app/auth/github/callback"
+                )
+            )
+        redirect_uri = settings.GITHUB_REDIRECT_URI.rstrip('/')
+    else:
+        if settings.GITHUB_REDIRECT_URI:
+            redirect_uri = settings.GITHUB_REDIRECT_URI.rstrip('/')
+        else:
+            backend_url_str = str(request.base_url).rstrip('/')
+            redirect_uri = f"{backend_url_str}/auth/github/callback"
+    
+    print(f"🔐 GitHub OAuth callback - redirect URI: {redirect_uri}")
     
     # Ensure GitHub OAuth is registered
     try:

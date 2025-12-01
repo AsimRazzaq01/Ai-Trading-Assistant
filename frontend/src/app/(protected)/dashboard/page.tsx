@@ -7,6 +7,7 @@ import { useTheme } from '@/context/ThemeContext';
 import { TrendingUp, TrendingDown, Newspaper, BarChart3, Sparkles } from 'lucide-react';
 import MarketOverview from '@/components/MarketOverview';
 import NewsFeed from '@/components/NewsFeed';
+import { getMarketStatus, getMarketStatusSubtitle } from '@/lib/marketStatus';
 
 interface User {
   email?: string;
@@ -18,6 +19,8 @@ export default function DashboardPage() {
   const { theme } = useTheme();
   const [user, setUser] = useState<User | null>(null);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [marketStatus, setMarketStatus] = useState(getMarketStatus());
+  const [marketSubtitle, setMarketSubtitle] = useState(getMarketStatusSubtitle());
 
   useEffect(() => {
     // Fetch user info
@@ -26,8 +29,12 @@ export default function DashboardPage() {
       .then(data => setUser(data))
       .catch(() => {});
 
-    // Update time every minute
-    const timer = setInterval(() => setCurrentTime(new Date()), 60000);
+    // Update time and market status every minute
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+      setMarketStatus(getMarketStatus());
+      setMarketSubtitle(getMarketStatusSubtitle());
+    }, 60000);
     return () => clearInterval(timer);
   }, []);
 
@@ -110,7 +117,7 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           <SummaryCard
             title="Top Gainers"
-            value="50+"
+            value="20+"
             subtitle="Stocks trending up"
             icon={TrendingUp}
             color="green"
@@ -118,7 +125,7 @@ export default function DashboardPage() {
           />
           <SummaryCard
             title="Top Losers"
-            value="50+"
+            value="20+"
             subtitle="Stocks trending down"
             icon={TrendingDown}
             color="red"
@@ -134,8 +141,8 @@ export default function DashboardPage() {
           />
           <SummaryCard
             title="Market Status"
-            value="Open"
-            subtitle="Trading active"
+            value={marketStatus}
+            subtitle={marketSubtitle}
             icon={BarChart3}
             color="purple"
             theme={theme}

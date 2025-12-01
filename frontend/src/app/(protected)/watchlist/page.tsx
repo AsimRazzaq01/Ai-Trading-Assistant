@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useTheme } from "@/context/ThemeContext";
 import { fetchStockSummary, StockSummary } from "@/lib/fetchStockSummary";
-import { resolveTicker } from "@/lib/searchStock";
+import StockSearchAutocomplete from "@/components/StockSearchAutocomplete";
 
 interface WatchlistItem {
   id: number;
@@ -106,10 +106,9 @@ export default function WatchlistPage() {
   }, [tickers, loadingWatchlist]);
 
   /* ─────────────── Add / Remove ─────────────── */
-  const addTicker = async () => {
-    const query = newTicker.trim();
-    if (!query) {
-      setError("Please enter a stock symbol or company name.");
+  const handleStockSelect = async (ticker: string, name: string) => {
+    if (!ticker) {
+      setError("Please select a stock from the dropdown.");
       return;
     }
     
@@ -121,21 +120,15 @@ export default function WatchlistPage() {
     setError("");
     setLoading(true);
     try {
-      // Resolve company name to ticker if needed
-      const symbol = await resolveTicker(query, polygonKey);
-      if (!symbol) {
-        throw new Error("Stock not found. Try 'Apple' or 'AAPL'");
-      }
-      
       // Check if already in local state
-      if (tickers.includes(symbol)) {
+      if (tickers.includes(ticker)) {
         setError("Ticker already in watchlist.");
         setLoading(false);
         return;
       }
       
       // ✅ Quick validation via Polygon API
-      const check = await fetchStockSummary([symbol], polygonKey);
+      const check = await fetchStockSummary([ticker], polygonKey);
       if (check.length === 0) {
         throw new Error("Invalid ticker.");
       }
@@ -147,7 +140,7 @@ export default function WatchlistPage() {
           "Content-Type": "application/json",
         },
         credentials: "include",
-        body: JSON.stringify({ symbol }),
+        body: JSON.stringify({ symbol: ticker }),
       });
 
       if (!res.ok) {
@@ -202,12 +195,24 @@ export default function WatchlistPage() {
   /* ─────────────── Render ─────────────── */
   return (
     <main
-      className={`min-h-screen px-8 py-20 transition-colors duration-500 ${
+      className={`min-h-screen px-8 py-20 transition-colors duration-500 relative overflow-hidden ${
         theme === "dark"
-          ? "bg-gradient-to-b from-black via-gray-950 to-black text-white"
-          : "bg-gradient-to-b from-[#f0f2f5] via-[#e8ebef] to-[#dfe3e8] text-[#2d3748]"
+          ? "bg-gradient-to-br from-gray-950 via-black to-gray-900 text-white"
+          : "bg-gradient-to-br from-blue-50 via-white to-purple-50 text-[#2d3748]"
       }`}
     >
+      {/* Animated background elements */}
+      <div className={`absolute inset-0 overflow-hidden pointer-events-none ${
+        theme === "dark" ? "opacity-20" : "opacity-10"
+      }`}>
+        <div className={`absolute top-20 left-10 w-72 h-72 rounded-full blur-3xl ${
+          theme === "dark" ? "bg-blue-500" : "bg-blue-400"
+        } animate-pulse`} style={{ animationDuration: '4s' }}></div>
+        <div className={`absolute bottom-20 right-10 w-96 h-96 rounded-full blur-3xl ${
+          theme === "dark" ? "bg-purple-500" : "bg-purple-400"
+        } animate-pulse`} style={{ animationDuration: '6s', animationDelay: '1s' }}></div>
+      </div>
+      <div className="relative z-10">
       <div className="max-w-5xl mx-auto">
         <h1 className={`text-3xl font-bold mb-6 ${
           theme === "dark" ? "text-white" : "text-[#2d3748]"
@@ -220,33 +225,20 @@ export default function WatchlistPage() {
 
         {/* Add Ticker */}
         <div className="flex flex-wrap gap-3 mb-8 items-center">
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              addTicker();
-            }}
-            className="flex items-center gap-2"
-          >
-            <input
-              type="text"
-              placeholder="Enter ticker or company name (e.g. AAPL or Apple)"
+          <div className="flex items-center gap-2 flex-1 min-w-[300px]">
+            <StockSearchAutocomplete
               value={newTicker}
-              onChange={(e) => setNewTicker(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  addTicker();
-                }
-              }}
-              className={`px-4 py-2 rounded-lg border focus:ring-2 focus:ring-blue-500 ${
-                theme === "dark"
-                  ? "bg-gray-800 border-gray-700 text-white"
-                  : "bg-white border-gray-300 text-black"
-              }`}
+              onChange={setNewTicker}
+              onSelect={handleStockSelect}
+              placeholder="Enter ticker or company name (e.g. AAPL or Apple)"
+              disabled={loading || loadingWatchlist}
+              polygonKey={polygonKey}
+              className="flex-1"
             />
             <button
-              type="submit"
-              disabled={loading || loadingWatchlist}
+              type="button"
+              onClick={() => handleStockSelect(newTicker.trim(), "")}
+              disabled={loading || loadingWatchlist || !newTicker.trim()}
               className={`px-4 py-2 rounded-lg disabled:opacity-50 transition-all ${
                 theme === "dark"
                   ? "bg-blue-600 hover:bg-blue-700"
@@ -255,7 +247,7 @@ export default function WatchlistPage() {
             >
               {loading ? "Adding..." : "Add"}
             </button>
-          </form>
+          </div>
 
           <button
             type="button"
@@ -362,6 +354,7 @@ export default function WatchlistPage() {
             </table>
           </div>
         )}
+      </div>
       </div>
     </main>
   );

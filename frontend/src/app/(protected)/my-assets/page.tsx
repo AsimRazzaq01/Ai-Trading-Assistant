@@ -11,7 +11,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { fetchStockData } from "@/lib/fetchStockData";
-import { resolveTicker } from "@/lib/searchStock";
+import StockSearchAutocomplete from "@/components/StockSearchAutocomplete";
 
 /* ───────────────── Helper UI ───────────────── */
 
@@ -365,9 +365,11 @@ export default function MyAssetsPage() {
   };
 
   /* ─────────────── Add asset ─────────────── */
-  const addAsset = async () => {
-    const query = newAsset.trim();
-    if (!query) return;
+  const handleStockSelect = async (ticker: string, name: string) => {
+    if (!ticker) {
+      addToast("Please select a stock from the dropdown.", "error");
+      return;
+    }
 
     if (!polygonKey) {
       addToast("Polygon API key not configured.", "error");
@@ -378,14 +380,7 @@ export default function MyAssetsPage() {
     setError("");
 
     try {
-      // Resolve company name to ticker if needed
-      const symbol = await resolveTicker(query, polygonKey);
-      if (!symbol) {
-        addToast("Stock not found. Try 'Apple' or 'AAPL'", "error");
-        setError("Stock not found. Try 'Apple' or 'AAPL'");
-        return;
-      }
-
+      const symbol = ticker.toUpperCase();
       const data = await fetchStockData(symbol, chartRange, polygonKey);
       if (!data) {
         addToast("Could not load stock.", "error");
@@ -407,7 +402,7 @@ export default function MyAssetsPage() {
         ...prev,
         {
           symbol,
-          name: data.name ?? symbol,
+          name: data.name ?? name ?? symbol,
           price,
           chart: data.chart,
           aiInsight,
@@ -423,6 +418,15 @@ export default function MyAssetsPage() {
       setError("Unexpected error adding stock.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const addAsset = async () => {
+    // Legacy function for Enter key support - will be handled by autocomplete
+    if (newAsset.trim()) {
+      // If user types and presses Enter, try to use the value as-is
+      // The autocomplete will handle selection
+      handleStockSelect(newAsset.trim(), "");
     }
   };
 
@@ -519,12 +523,24 @@ export default function MyAssetsPage() {
   /* ─────────────── UI ─────────────── */
   return (
     <main
-      className={`min-h-screen px-8 py-20 transition-colors duration-500 ${
+      className={`min-h-screen px-8 py-20 transition-colors duration-500 relative overflow-hidden ${
         theme === "dark"
-          ? "bg-gradient-to-b from-black via-gray-950 to-black text-white"
-          : "bg-gradient-to-b from-[#f0f2f5] via-[#e8ebef] to-[#dfe3e8] text-[#2d3748]"
+          ? "bg-gradient-to-br from-gray-950 via-black to-gray-900 text-white"
+          : "bg-gradient-to-br from-blue-50 via-white to-purple-50 text-[#2d3748]"
       }`}
     >
+      {/* Animated background elements */}
+      <div className={`absolute inset-0 overflow-hidden pointer-events-none ${
+        theme === "dark" ? "opacity-20" : "opacity-10"
+      }`}>
+        <div className={`absolute top-20 left-10 w-72 h-72 rounded-full blur-3xl ${
+          theme === "dark" ? "bg-blue-500" : "bg-blue-400"
+        } animate-pulse`} style={{ animationDuration: '4s' }}></div>
+        <div className={`absolute bottom-20 right-10 w-96 h-96 rounded-full blur-3xl ${
+          theme === "dark" ? "bg-purple-500" : "bg-purple-400"
+        } animate-pulse`} style={{ animationDuration: '6s', animationDelay: '1s' }}></div>
+      </div>
+      <div className="relative z-10">
       {/* Toasts: top-center */}
       <div className="fixed top-5 left-1/2 -translate-x-1/2 z-50 space-y-2">
         {toasts.map((t) => (
@@ -546,21 +562,18 @@ export default function MyAssetsPage() {
         <div className="flex flex-wrap gap-3 mb-8 items-center">
           {/* Input + Add */}
           <div className="flex items-center gap-2">
-            <input
-              type="text"
-              placeholder="Enter stock symbol or company name (e.g. AAPL or Apple)"
+            <StockSearchAutocomplete
               value={newAsset}
-              onChange={(e) => setNewAsset(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && addAsset()}
-              className={`px-4 py-2 rounded-lg border focus:ring-2 focus:ring-blue-500 ${
-                theme === "dark"
-                  ? "bg-gray-800 border-gray-700 text-white"
-                  : "bg-white border-gray-300 text-black"
-              }`}
+              onChange={setNewAsset}
+              onSelect={handleStockSelect}
+              placeholder="Enter stock symbol or company name (e.g. AAPL or Apple)"
+              disabled={loading}
+              polygonKey={polygonKey}
+              className="flex-1"
             />
             <button
               onClick={addAsset}
-              disabled={loading}
+              disabled={loading || !newAsset.trim()}
               className={`px-4 py-2 rounded-lg disabled:opacity-50 transition-all flex items-center gap-2 ${
                 theme === "dark"
                   ? "bg-blue-600 hover:bg-blue-700"
@@ -884,6 +897,7 @@ export default function MyAssetsPage() {
             )}
           </div>
         )}
+      </div>
       </div>
     </main>
   );

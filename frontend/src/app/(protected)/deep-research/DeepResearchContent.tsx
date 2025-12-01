@@ -13,7 +13,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { fetchStockData } from "@/lib/fetchStockData";
-import { resolveTicker } from "@/lib/searchStock";
+import StockSearchAutocomplete from "@/components/StockSearchAutocomplete";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 
@@ -164,8 +164,8 @@ export default function DeepResearchContent() {
   };
 
   /* Main Analysis Logic */
-  const analyzeStockWithSymbol = async (query: string) => {
-    if (!query) return;
+  const analyzeStockWithSymbol = async (ticker: string) => {
+    if (!ticker) return;
 
     if (!polygonKey) {
       addToast("Polygon API key not configured.", "error");
@@ -181,13 +181,7 @@ export default function DeepResearchContent() {
     setResults(null);
 
     try {
-      // Resolve company name to ticker if needed
-      const sym = await resolveTicker(query, polygonKey);
-      if (!sym) {
-        addToast("Stock not found. Try 'Apple' or 'AAPL'", "error");
-        setLoading(false);
-        return;
-      }
+      const sym = ticker.toUpperCase();
 
       let from = new Date();
       const today = new Date().toISOString().split("T")[0];
@@ -377,9 +371,14 @@ Provide 3-5 trading strategy options/opportunities. Format your response as a JS
   };
 
   const analyzeStock = async () => {
-    const query = symbol.trim();
-    if (!query) return;
-    await analyzeStockWithSymbol(query);
+    if (symbol.trim()) {
+      await analyzeStockWithSymbol(symbol.trim());
+    }
+  };
+
+  const handleStockSelect = (ticker: string, name: string) => {
+    setSymbol(ticker);
+    analyzeStockWithSymbol(ticker);
   };
 
   // Check if symbol is in watchlist or My Assets
@@ -718,12 +717,24 @@ Provide 3-5 trading strategy options/opportunities. Format your response as a JS
   /* ─────────────── Render ─────────────── */
   return (
     <main
-      className={`min-h-screen px-8 py-20 transition-colors duration-500 ${
+      className={`min-h-screen px-8 py-20 transition-colors duration-500 relative overflow-hidden ${
         theme === "dark"
-          ? "bg-gradient-to-b from-black via-gray-950 to-black text-white"
-          : "bg-gradient-to-b from-[#f0f2f5] via-[#e8ebef] to-[#dfe3e8] text-[#2d3748]"
+          ? "bg-gradient-to-br from-gray-950 via-black to-gray-900 text-white"
+          : "bg-gradient-to-br from-blue-50 via-white to-purple-50 text-[#2d3748]"
       }`}
     >
+      {/* Animated background elements */}
+      <div className={`absolute inset-0 overflow-hidden pointer-events-none ${
+        theme === "dark" ? "opacity-20" : "opacity-10"
+      }`}>
+        <div className={`absolute top-20 left-10 w-72 h-72 rounded-full blur-3xl ${
+          theme === "dark" ? "bg-blue-500" : "bg-blue-400"
+        } animate-pulse`} style={{ animationDuration: '4s' }}></div>
+        <div className={`absolute bottom-20 right-10 w-96 h-96 rounded-full blur-3xl ${
+          theme === "dark" ? "bg-purple-500" : "bg-purple-400"
+        } animate-pulse`} style={{ animationDuration: '6s', animationDelay: '1s' }}></div>
+      </div>
+      <div className="relative z-10">
       {/* Toast */}
       {toast && (
         <div className="fixed top-5 left-1/2 -translate-x-1/2 z-50">
@@ -747,22 +758,19 @@ Provide 3-5 trading strategy options/opportunities. Format your response as a JS
 
         {/* Controls */}
         <div className="flex flex-wrap gap-3 mb-10 items-center">
-          <input
-            type="text"
-            placeholder="Enter stock symbol or company name (e.g. TSLA or Tesla)"
+          <StockSearchAutocomplete
             value={symbol}
-            onChange={(e) => setSymbol(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && analyzeStock()}
-            className={`px-4 py-2 rounded-lg border focus:ring-2 focus:ring-blue-500 ${
-              theme === "dark"
-                ? "bg-gray-800 border-gray-700 text-white"
-                : "bg-white border-gray-300 text-black"
-            }`}
+            onChange={setSymbol}
+            onSelect={handleStockSelect}
+            placeholder="Enter stock symbol or company name (e.g. TSLA or Tesla)"
+            disabled={loading}
+            polygonKey={polygonKey}
+            className="flex-1 min-w-[300px]"
           />
 
           <button
             onClick={analyzeStock}
-            disabled={loading}
+            disabled={loading || !symbol.trim()}
             className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-all disabled:opacity-50 ${
               theme === "dark"
                 ? "bg-blue-600 hover:bg-blue-700"
@@ -1360,6 +1368,7 @@ Provide 3-5 trading strategy options/opportunities. Format your response as a JS
             </div>
           )
         )}
+      </div>
       </div>
     </main>
   );
