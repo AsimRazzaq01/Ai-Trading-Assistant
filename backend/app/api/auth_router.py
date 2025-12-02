@@ -32,8 +32,16 @@ def get_oauth():
 
 
 class RegisterRequest(BaseModel):
-    email: EmailStr
+    email: Optional[EmailStr] = None
+    username: Optional[str] = None
+    name: Optional[str] = None
     password: str = Field(..., min_length=6)
+
+    @model_validator(mode="after")
+    def ensure_identifier(self):
+        if not self.email and not self.username:
+            raise ValueError("Provide either email or username")
+        return self
 
 
 class LoginRequest(BaseModel):
@@ -50,15 +58,48 @@ class LoginRequest(BaseModel):
 
 @router.post("/register")
 def register(payload: RegisterRequest, db: Session = Depends(get_db)):
-    existing = db.query(models.User).filter(models.User.email == payload.email).first()
-    if existing:
-        raise HTTPException(status_code=400, detail="Email already registered")
+    try:
+        # Check for duplicate email if email is provided
+        if payload.email:
+            existing_email = db.query(models.User).filter(models.User.email == payload.email).first()
+            if existing_email:
+                raise HTTPException(status_code=400, detail="Email already registered")
+        
+        # Check for duplicate username if username is provided
+        if payload.username:
+            existing_username = db.query(models.User).filter(models.User.username == payload.username).first()
+            if existing_username:
+                raise HTTPException(status_code=400, detail="Username already taken")
 
-    new_user = models.User(email=payload.email, hashed_password=hash_password(payload.password))
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
-    return {"message": "User registered successfully"}
+        new_user = models.User(
+            email=payload.email,
+            username=payload.username,
+            name=payload.name,
+            hashed_password=hash_password(payload.password)
+        )
+        db.add(new_user)
+        db.commit()
+        db.refresh(new_user)
+        return {"message": "User registered successfully"}
+    except Exception as e:
+        db.rollback()
+        # Log the actual error for debugging
+        error_msg = str(e)
+        print(f"❌ Registration error: {error_msg}")
+        
+        # Check if it's a database constraint error (email NOT NULL)
+        if "not null" in error_msg.lower() or "null value" in error_msg.lower():
+            raise HTTPException(
+                status_code=500,
+                detail="Database schema needs to be updated. Please run: ALTER TABLE users ALTER COLUMN email DROP NOT NULL;"
+            )
+        
+        # Re-raise HTTPExceptions as-is
+        if isinstance(e, HTTPException):
+            raise e
+        
+        # Generic error
+        raise HTTPException(status_code=500, detail=f"Registration failed: {error_msg}")
 
 
 @router.post("/login")
@@ -133,7 +174,12 @@ def read_me(
     if not user:
         raise HTTPException(status_code=401, detail="User not found")
 
-    return {"id": user.id, "email": user.email}
+    return {
+        "id": user.id,
+        "email": user.email,
+        "username": user.username,
+        "name": user.name
+    }
 
 
 class ChangePasswordRequest(BaseModel):

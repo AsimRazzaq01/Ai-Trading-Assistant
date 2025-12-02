@@ -105,6 +105,7 @@ else:
 @app.on_event("startup")
 def on_startup():
     from sqlalchemy.exc import OperationalError
+    from sqlalchemy import text
     import time
 
     max_attempts = 10
@@ -113,6 +114,30 @@ def on_startup():
             print(f"🔧 Initializing database tables... (attempt {attempt}/{max_attempts})")
             Base.metadata.create_all(bind=engine)
             print("✅ Database tables are ready.")
+            
+            # Migrate: Make email column nullable if it's not already
+            try:
+                with engine.begin() as conn:
+                    # Check if email column is nullable
+                    result = conn.execute(text("""
+                        SELECT is_nullable 
+                        FROM information_schema.columns 
+                        WHERE table_name = 'users' AND column_name = 'email'
+                    """))
+                    row = result.fetchone()
+                    
+                    if row and row[0] == 'NO':
+                        print("🔧 Migrating: Making email column nullable...")
+                        conn.execute(text("ALTER TABLE users ALTER COLUMN email DROP NOT NULL"))
+                        print("✅ Migration complete: email column is now nullable")
+                    elif row and row[0] == 'YES':
+                        print("✅ Email column is already nullable")
+                    else:
+                        print("⚠️ Could not check email column status (table may not exist yet)")
+            except Exception as migration_error:
+                # Migration failed, but don't crash the app
+                print(f"⚠️ Migration check failed (non-critical): {migration_error}")
+            
             break
         except OperationalError as e:
             print(f"⏳ Database not ready yet (attempt {attempt}): {e}")

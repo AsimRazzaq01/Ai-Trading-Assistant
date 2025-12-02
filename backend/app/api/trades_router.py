@@ -27,8 +27,10 @@ def get_trades(
         {"symbol": "TSLA", "type": "sell", "quantity": 5, "price": 214.77},
     ]
 
+    # Use name, username, or email as fallback for greeting
+    user_display = current_user.name or current_user.username or current_user.email or "User"
     return {
-        "message": f"Welcome back, {current_user.email}!",
+        "message": f"Welcome back, {user_display}!",
         "trades": sample_trades,
     }
 

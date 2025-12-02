@@ -1,6 +1,7 @@
 // frontend/src/components/auth/RegisterForm.tsx
 
 "use client";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -9,9 +10,47 @@ import Input from "@/components/ui/Input";
 import PasswordInput from "@/components/ui/PasswordInput";
 import Button from "@/components/ui/Button";
 
+/** Top-center toast that auto-dismisses in 5s (still closable) */
+function Toast({
+  kind = "info",
+  message,
+  onClose,
+}: {
+  kind?: "success" | "error" | "info";
+  message: string;
+  onClose: () => void;
+}) {
+  const color =
+    kind === "success"
+      ? "bg-green-600"
+      : kind === "error"
+      ? "bg-red-600"
+      : "bg-blue-600";
+  return (
+    <div
+      className={`${color} text-white px-5 py-3 rounded-xl shadow-lg flex items-center justify-between min-w-[300px] animate-fadeIn`}
+      role="status"
+    >
+      <span className="text-sm">{message}</span>
+      <button
+        onClick={onClose}
+        className="ml-4 opacity-80 hover:opacity-100 text-lg leading-none"
+      >
+        ✕
+      </button>
+    </div>
+  );
+}
+
 const RegisterSchema = z
     .object({
-        name: z.string().min(1, "Name required"),
+        name: z
+            .string()
+            .min(1, "Name required")
+            .refine(
+                (val) => val.trim().split(/\s+/).length >= 2,
+                "Please enter your full name (first and last name)"
+            ),
         emailOrUsername: z.string().min(3, "Email or username required"),
         password: z.string().min(6, "Min 6 chars"),
         confirm: z.string().min(6, "Confirm your password"),
@@ -34,6 +73,23 @@ export default function RegisterForm() {
         resolver: zodResolver(RegisterSchema),
         mode: "onChange", // Enable real-time validation
     });
+
+    // Toast state
+    const [toasts, setToasts] = useState<
+        { id: number; kind: "success" | "error" | "info"; msg: string }[]
+    >([]);
+
+    // Toast helpers (top-center, auto-dismiss)
+    const addToast = (
+        msg: string,
+        kind: "success" | "error" | "info" = "info"
+    ) => {
+        const id = Date.now() + Math.random();
+        setToasts((t) => [...t, { id, kind, msg }]);
+        setTimeout(() => removeToast(id), 5000);
+    };
+    const removeToast = (id: number) =>
+        setToasts((t) => t.filter((x) => x.id !== id));
 
     // Watch password fields for real-time mismatch detection
     const password = watch("password");
@@ -60,20 +116,37 @@ export default function RegisterForm() {
             });
 
             if (res.ok) {
-                alert("Registration successful! You can now log in.");
-                window.location.href = "/login";
+                // Show success toast
+                addToast("Registration successful! You can now log in.", "success");
+                // Auto-redirect to login page after showing toast (1.5s delay)
+                setTimeout(() => {
+                    window.location.href = "/login";
+                }, 1500);
             } else {
                 const j = await res.json().catch(() => ({}));
-                alert(j.detail || j.message || "Registration failed");
+                addToast(j.detail || j.message || "Registration failed", "error");
             }
         } catch (err) {
             console.error("❌ Registration error:", err);
-            alert("Network error — is the backend running?");
+            addToast("Network error — is the backend running?", "error");
         }
     };
 
     return (
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+        <>
+            {/* Toasts: top-center */}
+            <div className="fixed top-5 left-1/2 -translate-x-1/2 z-50 space-y-2">
+                {toasts.map((t) => (
+                    <Toast
+                        key={t.id}
+                        kind={t.kind}
+                        message={t.msg}
+                        onClose={() => removeToast(t.id)}
+                    />
+                ))}
+            </div>
+
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
             <div className="space-y-1">
                 <Input placeholder="Full Name" {...register("name")} />
                 {errors.name && (
@@ -128,6 +201,7 @@ export default function RegisterForm() {
                 {isSubmitting ? "Creating account..." : "Create Account"}
             </Button>
         </form>
+        </>
     );
 }
 
