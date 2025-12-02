@@ -52,7 +52,7 @@ export default function DashboardPage() {
       className={`min-h-screen transition-colors duration-500 relative overflow-hidden ${
         theme === 'dark'
           ? 'bg-gradient-to-br from-gray-950 via-black to-gray-900 text-white'
-          : 'bg-gradient-to-br from-blue-50 via-white to-purple-50 text-[#2d3748]'
+          : 'bg-gradient-to-br from-blue-100 via-purple-50 to-pink-50 text-[#2d3748]'
       }`}
     >
       {/* Animated background elements */}
@@ -76,8 +76,8 @@ export default function DashboardPage() {
               : 'bg-white/80 border-gray-200/50 shadow-lg'
           }`}>
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-              <div>
-                <h1 className={`text-3xl md:text-4xl font-bold mb-2 bg-gradient-to-r bg-clip-text text-transparent ${
+              <div className="min-h-[60px] flex flex-col justify-center">
+                <h1 className={`text-3xl md:text-4xl font-bold mb-2 bg-gradient-to-r bg-clip-text text-transparent leading-tight ${
                   theme === 'dark'
                     ? 'from-blue-400 to-purple-400'
                     : 'from-blue-600 to-purple-600'

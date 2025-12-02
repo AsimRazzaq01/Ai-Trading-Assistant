@@ -57,7 +57,7 @@ export default function FloatingWidget() {
         <div className={`p-4 w-80 rounded-xl shadow-xl transition-all ${
           theme === 'dark'
             ? 'bg-gray-900/95 backdrop-blur-md border border-gray-800 text-white'
-            : 'bg-white/95 backdrop-blur-md border border-[#2d3748]/20 text-[#2d3748]'
+            : 'bg-white/70 backdrop-blur-md border border-purple-200/50 text-[#2d3748] shadow-purple-200/20'
         }`}>
           <div className="flex justify-between items-center mb-2">
             <h4 className={`font-semibold ${

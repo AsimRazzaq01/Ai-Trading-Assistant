@@ -25,22 +25,12 @@ export default function StockSearchAutocomplete({
 }: StockSearchAutocompleteProps) {
   const { theme } = useTheme()
   const [suggestions, setSuggestions] = useState<StockSearchResult[]>([])
-  const [showSuggestions, setShowSuggestions] = useState(false)
+  const [showSuggestions] = useState(false) // Always false - dropdown removed
   const [loading, setLoading] = useState(false)
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
 
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
-        setShowSuggestions(false)
-      }
-    }
-
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
+    // Dropdown removed - no need for click outside handler
 
   // Debounced search
   useEffect(() => {
@@ -50,7 +40,6 @@ export default function StockSearchAutocomplete({
 
     if (!value.trim() || value.length < 2) {
       setSuggestions([])
-      setShowSuggestions(false)
       return
     }
 
@@ -59,11 +48,10 @@ export default function StockSearchAutocomplete({
       try {
         const results = await searchStock(value, polygonKey)
         setSuggestions(results)
-        setShowSuggestions(results.length > 0)
+        // Dropdown removed - suggestions stored but not displayed
       } catch (error) {
         console.error('Error searching stocks:', error)
         setSuggestions([])
-        setShowSuggestions(false)
       } finally {
         setLoading(false)
       }
@@ -79,14 +67,11 @@ export default function StockSearchAutocomplete({
   const handleSelect = (result: StockSearchResult) => {
     onChange(result.ticker)
     onSelect(result.ticker, result.name)
-    setShowSuggestions(false)
     setSuggestions([])
   }
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Escape') {
-      setShowSuggestions(false)
-    } else if (e.key === 'Enter' && suggestions.length > 0) {
+    if (e.key === 'Enter' && suggestions.length > 0) {
       e.preventDefault()
       handleSelect(suggestions[0])
     }
@@ -99,11 +84,6 @@ export default function StockSearchAutocomplete({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         onKeyDown={handleKeyDown}
-        onFocus={() => {
-          if (suggestions.length > 0) {
-            setShowSuggestions(true)
-          }
-        }}
         placeholder={placeholder}
         disabled={disabled}
         className={`w-full px-4 py-2 rounded-lg border focus:ring-2 focus:ring-blue-500 transition-all ${
@@ -121,46 +101,7 @@ export default function StockSearchAutocomplete({
         </div>
       )}
 
-      {showSuggestions && suggestions.length > 0 && (
-        <div className={`absolute z-50 w-full mt-1 rounded-lg border shadow-lg max-h-60 overflow-auto ${
-          theme === "dark"
-            ? "bg-gray-900 border-gray-700"
-            : "bg-white border-gray-300"
-        }`}>
-          {suggestions.map((result, index) => (
-            <button
-              key={`${result.ticker}-${index}`}
-              type="button"
-              onClick={() => handleSelect(result)}
-              className={`w-full text-left px-4 py-3 hover:bg-opacity-80 transition-colors ${
-                theme === "dark"
-                  ? "hover:bg-gray-800 text-white"
-                  : "hover:bg-gray-100 text-gray-900"
-              } ${index !== suggestions.length - 1 ? "border-b" : ""} ${
-                theme === "dark" ? "border-gray-700" : "border-gray-200"
-              }`}
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="font-semibold font-mono">{result.ticker}</div>
-                  <div className={`text-sm ${
-                    theme === "dark" ? "text-gray-400" : "text-gray-600"
-                  }`}>
-                    {result.name}
-                  </div>
-                </div>
-                {result.market && (
-                  <div className={`text-xs px-2 py-1 rounded ${
-                    theme === "dark" ? "bg-gray-800 text-gray-400" : "bg-gray-100 text-gray-600"
-                  }`}>
-                    {result.market}
-                  </div>
-                )}
-              </div>
-            </button>
-          ))}
-        </div>
-      )}
+      {/* Dropdown removed - users can type and press Enter to search */}
     </div>
   )
 }
