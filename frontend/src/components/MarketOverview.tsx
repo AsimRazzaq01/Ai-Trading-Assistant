@@ -139,7 +139,7 @@ export default function MarketOverview() {
         className={`h-full flex flex-col rounded-xl overflow-hidden relative ${
           theme === 'dark'
             ? 'glass-dark bg-gray-900/40 backdrop-blur-md border border-white/10 shadow-lg'
-            : 'glass-light bg-[#e8ebef]/70 backdrop-blur-md border border-[#2d3748]/10 shadow-md'
+            : 'bg-white border border-gray-200 shadow-sm hover:shadow-lg transition'
         }`}
         style={{ 
           transform: 'translateZ(0)', 
@@ -162,13 +162,13 @@ export default function MarketOverview() {
         />
         
         <div 
-          className={`relative flex items-center justify-between px-4 py-3 border-b ${
-            theme === 'dark' ? 'border-white/10' : 'border-[#2d3748]/10'
+          className={`relative flex items-center justify-between px-5 py-3 border-b ${
+            theme === 'dark' ? 'border-white/10' : 'border-gray-200'
           }`}
           style={{ contain: 'layout style paint' }}
         >
           <h3 className={`text-base font-semibold ${
-            theme === 'dark' ? 'text-white' : 'text-[#2d3748]'
+            theme === 'dark' ? 'text-white' : 'text-gray-900'
           }`}>{title}</h3>
         </div>
         <div 
@@ -179,7 +179,7 @@ export default function MarketOverview() {
             WebkitOverflowScrolling: 'touch',
           }}
         >
-          <div className="p-4 space-y-2">
+          <div className="p-5 space-y-2">
             {displayItems.map(r => (
               <StockItem 
                 key={r.symbol}
@@ -189,7 +189,7 @@ export default function MarketOverview() {
               />
             ))}
             {!displayItems.length && <div className={`text-sm ${
-              theme === 'dark' ? 'opacity-60 text-gray-400' : 'opacity-60 text-gray-600'
+              theme === 'dark' ? 'opacity-60 text-gray-400' : 'text-gray-600'
             }`}>No data.</div>}
           </div>
           {/* Fade hint when scrolled */}
@@ -205,8 +205,8 @@ export default function MarketOverview() {
   
   return (
     <>
-      {err && <div className={`md:col-span-3 p-4 rounded-xl text-red-300 text-sm ${
-        theme === 'dark' ? 'bg-gray-900 border border-gray-800' : 'bg-red-50 border border-red-200'
+      {err && <div className={`md:col-span-3 p-5 rounded-xl text-sm ${
+        theme === 'dark' ? 'bg-gray-900 border border-gray-800 text-red-300' : 'bg-white border border-red-200 text-red-600 shadow-sm'
       }`}>Market data error: {err}</div>}
       <List title="Top Gainers" items={gainers} />
       <List title="Top Losers"  items={losers} />

@@ -46,7 +46,7 @@ export default function FloatingWidget() {
           className={`w-14 h-14 grid place-items-center rounded-full transition-all shadow-lg ${
             theme === 'dark'
               ? 'bg-white/10 backdrop-blur-md border border-white/20 hover:bg-white/15 text-white'
-              : 'bg-white/90 backdrop-blur-md border border-[#2d3748]/20 hover:bg-white text-[#2d3748] shadow-md'
+              : 'bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 shadow-sm'
           }`}
           aria-label="Open quick stock widget"
         >

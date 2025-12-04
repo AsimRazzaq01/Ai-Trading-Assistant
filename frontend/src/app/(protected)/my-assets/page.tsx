@@ -523,10 +523,10 @@ export default function MyAssetsPage() {
   /* ─────────────── UI ─────────────── */
   return (
     <main
-      className={`min-h-screen px-8 py-20 transition-colors duration-500 relative overflow-hidden ${
+      className={`min-h-screen px-6 md:px-10 py-6 transition-colors duration-500 relative overflow-hidden ${
         theme === "dark"
           ? "bg-gradient-to-br from-gray-950 via-black to-gray-900 text-white"
-          : "bg-gradient-to-br from-blue-100 via-purple-50 to-pink-50 text-[#2d3748]"
+          : "bg-gradient-to-b from-white to-[#f0f4ff] text-gray-900"
       }`}
     >
       {/* Animated background elements */}
@@ -554,7 +554,9 @@ export default function MyAssetsPage() {
       </div>
 
       <div className="max-w-6xl mx-auto">
-        <h1 className="text-3xl font-bold mb-6">
+        <h1 className={`text-3xl font-semibold mb-6 ${
+          theme === "dark" ? "text-white" : "text-gray-900"
+        }`}>
           My Assets Dashboard (AI-Enhanced)
         </h1>
 
@@ -576,8 +578,8 @@ export default function MyAssetsPage() {
               disabled={loading || !newAsset.trim()}
               className={`px-4 py-2 rounded-lg disabled:opacity-50 transition-all flex items-center gap-2 ${
                 theme === "dark"
-                  ? "bg-blue-600 hover:bg-blue-700"
-                  : "bg-blue-500 hover:bg-blue-600 text-white"
+                  ? "bg-blue-600 hover:bg-blue-700 text-white"
+                  : "bg-blue-600 hover:bg-blue-700 text-white"
               }`}
             >
               {loading ? <Spinner /> : null}
@@ -600,7 +602,7 @@ export default function MyAssetsPage() {
               className={`px-3 py-2 rounded-lg border ${
                 theme === "dark"
                   ? "bg-gray-800 border-gray-700 text-white disabled:opacity-50"
-                  : "bg-white border-gray-300 text-black disabled:opacity-50"
+                  : "bg-white border-gray-200 text-gray-900 disabled:opacity-50 shadow-sm"
               }`}
             >
               <option value={7}>7 Days</option>

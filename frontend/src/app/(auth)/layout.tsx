@@ -14,7 +14,7 @@ export default function AuthLayout({
         <div className={`min-h-screen flex items-center justify-center transition-colors duration-500 relative overflow-hidden ${
             theme === "dark"
                 ? "bg-gradient-to-br from-gray-950 via-black to-gray-900"
-                : "bg-gradient-to-br from-blue-50 via-white to-purple-50"
+                : "bg-gradient-to-b from-white to-[#f0f4ff]"
         }`}>
             {/* Animated background elements */}
             <div className={`absolute inset-0 overflow-hidden pointer-events-none ${
@@ -28,10 +28,10 @@ export default function AuthLayout({
                 } animate-pulse`} style={{ animationDuration: '6s', animationDelay: '1s' }}></div>
             </div>
 
-            <div className={`w-full max-w-md p-8 rounded-2xl shadow-2xl transition-all duration-500 relative z-10 backdrop-blur-sm ${
+            <div className={`w-full max-w-md p-8 rounded-xl shadow-md transition-all duration-500 relative z-10 ${
                 theme === "dark"
                     ? "bg-gray-900/90 border border-gray-800/50 shadow-blue-500/10"
-                    : "bg-white/90 border border-gray-200/50 shadow-xl"
+                    : "bg-white border border-gray-200"
             }`}>
                 {/* Dark mode toggle */}
                 <div className="flex justify-end mb-6">

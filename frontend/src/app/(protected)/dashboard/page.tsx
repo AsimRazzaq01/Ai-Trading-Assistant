@@ -52,7 +52,7 @@ export default function DashboardPage() {
       className={`min-h-screen transition-colors duration-500 relative overflow-hidden ${
         theme === 'dark'
           ? 'bg-gradient-to-br from-gray-950 via-black to-gray-900 text-white'
-          : 'bg-gradient-to-br from-blue-100 via-purple-50 to-pink-50 text-[#2d3748]'
+          : 'bg-gradient-to-b from-white to-[#f0f4ff] text-gray-900'
       }`}
     >
       {/* Animated background elements */}
@@ -67,20 +67,20 @@ export default function DashboardPage() {
         } animate-pulse`} style={{ animationDuration: '6s', animationDelay: '1s' }}></div>
       </div>
 
-      <div className="max-w-7xl mx-auto p-6 pt-24 relative z-10">
+      <div className="max-w-7xl mx-auto px-6 md:px-10 py-6 pt-24 relative z-10">
         {/* Welcome Header Section */}
         <div className="mb-8">
-          <div className={`rounded-2xl p-6 backdrop-blur-sm border transition-all duration-300 ${
+          <div className={`rounded-xl p-5 border transition-all duration-300 hover:shadow-lg ${
             theme === 'dark'
               ? 'bg-gray-900/60 border-white/10 shadow-xl'
-              : 'bg-white/80 border-gray-200/50 shadow-lg'
+              : 'bg-white border-gray-200 shadow-sm'
           }`}>
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               <div className="min-h-[60px] flex flex-col justify-center">
-                <h1 className={`text-3xl md:text-4xl font-bold mb-2 bg-gradient-to-r bg-clip-text text-transparent leading-tight ${
+                <h1 className={`text-3xl md:text-4xl font-semibold mb-2 leading-tight ${
                   theme === 'dark'
-                    ? 'from-blue-400 to-purple-400'
-                    : 'from-blue-600 to-purple-600'
+                    ? 'bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent'
+                    : 'text-gray-900'
                 }`}>
                   {greeting()}, {userName}! 👋
                 </h1>
@@ -114,7 +114,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <SummaryCard
             title="Top Gainers"
             value="20+"
@@ -154,6 +154,19 @@ export default function DashboardPage() {
           <MarketOverview />
           <NewsFeed />
         </div>
+
+        {/* Disclaimer */}
+        <footer className={`mt-12 mb-6 px-6 py-6 rounded-xl ${
+          theme === 'dark'
+            ? 'bg-gray-900/60 border border-white/10'
+            : 'bg-white border border-gray-200 shadow-sm'
+        }`}>
+          <p className={`text-xs leading-relaxed text-center ${
+            theme === 'dark' ? 'text-gray-400' : 'text-gray-700'
+          }`}>
+            Profit Path provides market insights, trading signals, and AI-generated suggestions for informational and educational purposes only. We do not offer financial, investment, or trading advice, and we are not registered financial advisors or brokers. All trading decisions you make are solely your responsibility. Any actions you take based on our platform's recommendations, analysis, or content are done entirely at your own risk. Profit Path and its creators are not liable for any losses, damages, or outcomes resulting from trades or investment decisions made by users.
+          </p>
+        </footer>
       </div>
     </main>
   );
@@ -196,10 +209,10 @@ function SummaryCard({ title, value, subtitle, icon: Icon, color, theme }: Summa
 
   return (
     <div
-      className={`rounded-xl p-5 border backdrop-blur-sm transition-all duration-300 hover:scale-[1.02] hover:shadow-xl ${
+      className={`rounded-xl p-5 border transition-all duration-300 hover:shadow-lg ${
         theme === 'dark'
-          ? 'bg-gray-900/60 border-white/10'
-          : 'bg-white/80 border-gray-200/50'
+          ? 'bg-gray-900/60 border-white/10 hover:shadow-xl'
+          : 'bg-white border-gray-200 shadow-sm'
       } ${colors.bg}`}
     >
       <div className="flex items-start justify-between mb-3">
@@ -216,7 +229,7 @@ function SummaryCard({ title, value, subtitle, icon: Icon, color, theme }: Summa
         }`}>
           {title}
         </p>
-        <p className={`text-2xl font-bold mb-1 ${
+        <p className={`text-2xl font-semibold mb-1 ${
           theme === 'dark' ? 'text-white' : 'text-gray-900'
         }`}>
           {value}

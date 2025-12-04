@@ -440,7 +440,7 @@ export default function RiskManagementPage() {
       className={`min-h-screen transition-colors duration-500 relative overflow-hidden ${
         theme === 'dark'
           ? 'bg-gradient-to-br from-gray-950 via-black to-gray-900 text-white'
-          : 'bg-gradient-to-br from-blue-100 via-purple-50 to-pink-50 text-[#2d3748]'
+          : 'bg-gradient-to-b from-white to-[#f0f4ff] text-gray-900'
       }`}
     >
       {/* Animated background elements */}
@@ -455,10 +455,10 @@ export default function RiskManagementPage() {
         } animate-pulse`} style={{ animationDuration: '6s', animationDelay: '1s' }}></div>
       </div>
       <div className="relative z-10">
-      <div className="max-w-7xl mx-auto p-6 pt-24">
+      <div className="max-w-7xl mx-auto px-6 md:px-10 py-6 pt-24">
         <h1
-          className={`text-3xl font-bold mb-6 ${
-            theme === 'dark' ? 'text-white' : 'text-blue-600'
+          className={`text-3xl font-semibold mb-6 ${
+            theme === 'dark' ? 'text-white' : 'text-gray-900'
           }`}
         >
           Risk Management 🛡️
@@ -466,7 +466,7 @@ export default function RiskManagementPage() {
 
         {loading ? (
           <div className="flex items-center justify-center py-12">
-            <p className={theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}>
+            <p className={theme === 'dark' ? 'text-gray-400' : 'text-gray-700'}>
               Loading risk management data...
             </p>
           </div>
@@ -475,10 +475,10 @@ export default function RiskManagementPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
               {/* Portfolio Risk Metrics */}
               <div
-                className={`rounded-lg shadow-md p-6 transition-all duration-300 ${
+                className={`rounded-xl shadow-sm p-5 border transition-all duration-300 hover:shadow-lg ${
                   theme === 'dark'
-                    ? 'bg-gray-900 border border-gray-800'
-                    : 'bg-white border border-gray-200'
+                    ? 'bg-gray-900 border-gray-800'
+                    : 'bg-white border-gray-200'
                 }`}
               >
                 <h2

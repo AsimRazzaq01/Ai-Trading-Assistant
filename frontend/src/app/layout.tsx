@@ -14,8 +14,13 @@ export default function RootLayout({
 }) {
     return (
         <html lang="en">
-        <body className="bg-[#f0f2f5] text-[#2d3748]">
+        <body className="relative min-h-screen">
             <ThemeProvider>
+                {/* Global Animated Background */}
+                <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
+                    <div className="background-dark dark:block hidden"></div>
+                    <div className="background-light dark:hidden block"></div>
+                </div>
                 {children}
             </ThemeProvider>
         </body>

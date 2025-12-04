@@ -156,7 +156,7 @@ export default function MarketChatPage() {
       className={`min-h-screen transition-colors duration-500 relative overflow-hidden ${
         theme === 'dark'
           ? 'bg-gradient-to-br from-gray-950 via-black to-gray-900 text-white'
-          : 'bg-gradient-to-br from-blue-100 via-purple-50 to-pink-50 text-[#2d3748]'
+          : 'bg-gradient-to-b from-white to-[#f0f4ff] text-gray-900'
       }`}
     >
       {/* Animated background elements */}

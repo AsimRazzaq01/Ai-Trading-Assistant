@@ -16,7 +16,7 @@ export default function Header() {
     <header className={`fixed top-0 inset-x-0 z-50 transition-all duration-300 ${
       theme === 'dark'
         ? 'backdrop-blur-md bg-black/40 border-b border-white/10'
-        : 'backdrop-blur-md bg-white/90 border-b border-gray-200 shadow-sm'
+        : 'bg-white border-b border-gray-200 shadow-sm'
     }`}>
       <nav className="max-w-7xl mx-auto px-4 py-3">
         <div className="flex items-center justify-between">
@@ -25,7 +25,7 @@ export default function Header() {
             className={`font-semibold text-xl transition ${
               theme === 'dark' 
                 ? 'text-white hover:text-gray-300' 
-                : 'text-[#2d3748] hover:text-blue-600'
+                : 'text-gray-900 hover:text-blue-600'
             }`}
           >
             Profit Path 🚀
@@ -168,7 +168,7 @@ export default function Header() {
               className={`p-2 rounded-xl transition-all ${
                 theme === 'dark'
                   ? 'bg-white/10 border border-white/20 hover:bg-white/15 text-white'
-                  : 'bg-[#e8ebef] border border-[#2d3748]/20 hover:bg-[#dfe3e8] text-[#2d3748]'
+                  : 'bg-gray-100 border border-gray-200 hover:bg-gray-200 text-gray-700'
               }`}
               aria-label="Toggle theme"
             >

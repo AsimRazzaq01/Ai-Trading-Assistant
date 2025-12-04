@@ -57,10 +57,10 @@ const NewsItem = ({
     <div
       onClick={handleClick}
       data-theme={theme}
-      className={`relative block rounded-xl p-3 border cursor-pointer overflow-hidden group/item news-item-hover ${
+      className={`relative block rounded-xl p-5 border cursor-pointer overflow-hidden group/item news-item-hover ${
         theme === 'dark'
           ? 'border-white/10'
-          : 'border-gray-300/50'
+          : 'bg-white border-gray-200 shadow-sm hover:shadow-md transition'
       }`}
       style={{ 
         transform: 'translateZ(0)',
@@ -113,24 +113,24 @@ const NewsItem = ({
           <div className={`w-16 h-16 rounded-md flex items-center justify-center text-xs ${
             theme === 'dark'
               ? 'bg-gray-800 border border-gray-700 opacity-60'
-              : 'bg-[#e8ebef] border border-[#2d3748]/20 opacity-60'
+              : 'bg-gray-100 border border-gray-200 opacity-60'
           }`}>
             News
           </div>
         )}
         <div className="min-w-0 flex-1">
           <div className={`text-sm font-medium line-clamp-2 ${
-            theme === 'dark' ? 'text-white' : 'text-[#2d3748]'
+            theme === 'dark' ? 'text-white' : 'text-gray-900'
           }`}>{item.title}</div>
           <div className={`text-xs mt-0.5 ${
-            theme === 'dark' ? 'opacity-70 text-gray-400' : 'opacity-70 text-gray-600'
+            theme === 'dark' ? 'opacity-70 text-gray-400' : 'text-gray-600'
           }`}>
             {item.source ? `${item.source} • ` : ''}
             {item.publishedAt ? new Date(item.publishedAt).toLocaleString() : ''}
           </div>
           {item.summary && (
             <div className={`text-xs mt-1 line-clamp-2 ${
-              theme === 'dark' ? 'opacity-80 text-gray-300' : 'opacity-80 text-gray-700'
+              theme === 'dark' ? 'opacity-80 text-gray-300' : 'text-gray-700'
             }`}>
               {item.summary}
             </div>
@@ -179,7 +179,7 @@ export default function NewsFeed({ q }: { q?: string }) {
       className={`h-full flex flex-col rounded-xl overflow-hidden relative group ${
         theme === 'dark'
           ? 'glass-dark bg-gray-900/40 backdrop-blur-md border border-white/10 shadow-lg'
-          : 'glass-light bg-[#e8ebef]/70 backdrop-blur-md border border-[#2d3748]/10 shadow-md'
+          : 'bg-white border border-gray-200 shadow-sm hover:shadow-lg transition'
       }`}
       style={{ 
         transform: 'translateZ(0)', 
@@ -202,13 +202,13 @@ export default function NewsFeed({ q }: { q?: string }) {
       />
       {/* Header */}
       <div 
-        className={`relative flex items-center justify-between px-4 py-3 border-b ${
-            theme === 'dark' ? 'border-white/10' : 'border-[#2d3748]/10'
+        className={`relative flex items-center justify-between px-5 py-3 border-b ${
+            theme === 'dark' ? 'border-white/10' : 'border-gray-200'
         }`}
         style={{ contain: 'layout style paint' }}
       >
         <h3 className={`text-base font-semibold ${
-          theme === 'dark' ? 'text-white' : 'text-[#2d3748]'
+          theme === 'dark' ? 'text-white' : 'text-gray-900'
         }`}>Market News</h3>
       </div>
 
@@ -221,7 +221,7 @@ export default function NewsFeed({ q }: { q?: string }) {
           WebkitOverflowScrolling: 'touch',
         }}
       >
-        <div className="p-4 space-y-3">
+        <div className="p-5 space-y-4">
           {err && (
             <div className={`text-sm ${
               theme === 'dark' ? 'text-red-300' : 'text-red-600'
@@ -232,7 +232,7 @@ export default function NewsFeed({ q }: { q?: string }) {
 
           {items.length === 0 && !err && (
             <div className={`text-sm ${
-              theme === 'dark' ? 'opacity-70 text-gray-400' : 'opacity-70 text-gray-600'
+              theme === 'dark' ? 'opacity-70 text-gray-400' : 'text-gray-600'
             }`}>No news right now.</div>
           )}
 

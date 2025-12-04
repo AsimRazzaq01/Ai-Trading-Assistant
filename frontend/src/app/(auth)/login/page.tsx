@@ -12,10 +12,10 @@ export default function LoginPage() {
     return (
         <div className="w-full">
             <div className="text-center mb-8">
-                <h1 className={`text-4xl font-bold mb-2 bg-gradient-to-r bg-clip-text text-transparent transition-all duration-300 ${
+                <h1 className={`text-4xl font-semibold mb-2 transition-all duration-300 ${
                     theme === "dark" 
-                        ? "from-blue-400 to-purple-400" 
-                        : "from-blue-600 to-purple-600"
+                        ? "bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent" 
+                        : "text-gray-900"
                 }`}>
                     Welcome Back
                 </h1>
