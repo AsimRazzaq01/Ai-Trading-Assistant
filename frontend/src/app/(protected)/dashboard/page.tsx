@@ -51,19 +51,19 @@ export default function DashboardPage() {
     <main
       className={`min-h-screen transition-colors duration-500 relative overflow-hidden ${
         theme === 'dark'
-          ? 'bg-gradient-to-br from-gray-950 via-black to-gray-900 text-white'
-          : 'bg-gradient-to-b from-white to-[#f0f4ff] text-gray-900'
+          ? 'bg-gradient-to-br from-gray-950/95 via-black/95 to-gray-900/95 text-white'
+          : 'bg-gradient-to-b from-white/60 to-[#f0f4ff]/60 text-gray-900 backdrop-blur-[2px]'
       }`}
     >
-      {/* Animated background elements */}
+      {/* Animated background elements - Updated to Cyan and Emerald for light theme */}
       <div className={`absolute inset-0 overflow-hidden pointer-events-none ${
-        theme === 'dark' ? 'opacity-20' : 'opacity-10'
+        theme === 'dark' ? 'opacity-20' : 'opacity-15'
       }`}>
         <div className={`absolute top-20 left-10 w-72 h-72 rounded-full blur-3xl ${
-          theme === 'dark' ? 'bg-blue-500' : 'bg-blue-400'
+          theme === 'dark' ? 'bg-blue-500' : 'bg-cyan-500'
         } animate-pulse`} style={{ animationDuration: '4s' }}></div>
         <div className={`absolute bottom-20 right-10 w-96 h-96 rounded-full blur-3xl ${
-          theme === 'dark' ? 'bg-purple-500' : 'bg-purple-400'
+          theme === 'dark' ? 'bg-purple-500' : 'bg-emerald-500'
         } animate-pulse`} style={{ animationDuration: '6s', animationDelay: '1s' }}></div>
       </div>
 

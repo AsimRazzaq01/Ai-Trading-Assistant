@@ -12,8 +12,8 @@ export default function HomePage() {
     return (
         <main className={`relative min-h-screen overflow-hidden transition-colors duration-500 ${
             theme === "dark"
-                ? "bg-gradient-to-b from-blue-950 via-black to-black"
-                : "bg-gradient-to-b from-white to-[#f0f4ff]"
+                ? "bg-gradient-to-b from-blue-950/95 via-black/95 to-black/95"
+                : "bg-gradient-to-b from-white/60 to-[#f0f4ff]/60 backdrop-blur-[2px]"
         }`}>
             {/* Financial Background Elements - Responsive */}
             <div className={`absolute inset-0 pointer-events-none z-0 ${
@@ -171,7 +171,7 @@ export default function HomePage() {
                                 className={`absolute inset-0 -z-10 blur-3xl rounded-full transition-opacity duration-500 ${
                                     theme === "dark"
                                         ? "bg-blue-500/20"
-                                        : "bg-blue-400/15"
+                                        : "bg-cyan-500/15"
                                 }`}
                                 style={{
                                     width: "120%",
