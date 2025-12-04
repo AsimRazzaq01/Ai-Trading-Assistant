@@ -523,7 +523,7 @@ export default function MyAssetsPage() {
   /* ─────────────── UI ─────────────── */
   return (
     <main
-      className={`min-h-screen px-6 md:px-10 py-6 transition-colors duration-500 relative overflow-hidden ${
+      className={`min-h-screen px-6 md:px-10 pt-24 pb-6 transition-colors duration-500 relative overflow-hidden ${
         theme === "dark"
           ? "bg-gradient-to-br from-gray-950 via-black to-gray-900 text-white"
           : "bg-gradient-to-b from-white to-[#f0f4ff] text-gray-900"

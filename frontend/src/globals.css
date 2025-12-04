@@ -232,3 +232,17 @@ html, body, :root {
     opacity: 0.5;
   }
 }
+
+/* Touch optimization for mobile devices */
+.touch-manipulation {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Mobile menu animation improvements */
+@media (max-width: 1024px) {
+  /* Ensure smooth scrolling on mobile */
+  body {
+    -webkit-overflow-scrolling: touch;
+  }
+}
