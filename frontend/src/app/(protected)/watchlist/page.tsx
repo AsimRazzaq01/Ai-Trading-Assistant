@@ -201,12 +201,12 @@ export default function WatchlistPage() {
           : "bg-gradient-to-b from-white/60 to-[#f0f4ff]/60 text-gray-900 backdrop-blur-[2px]"
       }`}
     >
-      {/* Animated background elements - Updated to Cyan and Emerald for light theme */}
+      {/* Animated background elements - Updated to Lapis Blue and Emerald for light theme */}
       <div className={`absolute inset-0 overflow-hidden pointer-events-none ${
         theme === "dark" ? "opacity-20" : "opacity-15"
       }`}>
         <div className={`absolute top-20 left-10 w-72 h-72 rounded-full blur-3xl ${
-          theme === "dark" ? "bg-blue-500" : "bg-cyan-500"
+          theme === "dark" ? "bg-blue-500" : "bg-lapis-500"
         } animate-pulse`} style={{ animationDuration: '4s' }}></div>
         <div className={`absolute bottom-20 right-10 w-96 h-96 rounded-full blur-3xl ${
           theme === "dark" ? "bg-purple-500" : "bg-emerald-500"

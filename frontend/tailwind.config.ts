@@ -8,6 +8,13 @@ const config: Config = {
     ],
     theme: {
         extend: {
+            colors: {
+                'lapis': {
+                    '500': '#26619c',
+                    '600': '#1e4d7a',
+                    '700': '#173a5e',
+                },
+            },
             keyframes: {
                 float: {
                     "0%, 100%": { transform: "translateY(0)" },

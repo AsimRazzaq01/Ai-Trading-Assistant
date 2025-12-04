@@ -97,7 +97,7 @@ export default function CandlestickChart({
   // Color presets - use consistent colors that work in both themes
   const colorPresets = {
     trend: [
-      { name: 'Cyan', value: '#06b6d4' },
+      { name: 'Lapis Blue', value: '#26619c' },
       { name: 'Purple', value: '#8b5cf6' },
       { name: 'Blue', value: '#3b82f6' },
       { name: 'Green', value: '#10b981' },
@@ -107,7 +107,7 @@ export default function CandlestickChart({
       { name: 'Green', value: '#10b981' },
       { name: 'Emerald', value: '#059669' },
       { name: 'Teal', value: '#14b8a6' },
-      { name: 'Cyan', value: '#06b6d4' },
+      { name: 'Lapis Blue', value: '#26619c' },
       { name: 'Blue', value: '#3b82f6' },
       { name: 'Indigo', value: '#6366f1' },
     ],
@@ -123,7 +123,7 @@ export default function CandlestickChart({
   
   // Default colors based on theme
   const defaultColors: ChartColors = {
-    trendUptrend: theme === 'dark' ? '#06b6d4' : '#0891b2',
+    trendUptrend: theme === 'dark' ? '#06b6d4' : '#26619c',
     trendDowntrend: theme === 'dark' ? '#8b5cf6' : '#7c3aed',
     trendSideways: theme === 'dark' ? '#3b82f6' : '#2563eb',
     patternBullish: theme === 'dark' ? '#10b981' : '#059669',
@@ -157,7 +157,7 @@ export default function CandlestickChart({
   // Update colors when theme changes
   useEffect(() => {
     const currentDefaultColors: ChartColors = {
-      trendUptrend: theme === 'dark' ? '#06b6d4' : '#0891b2',
+      trendUptrend: theme === 'dark' ? '#06b6d4' : '#26619c',
       trendDowntrend: theme === 'dark' ? '#8b5cf6' : '#7c3aed',
       trendSideways: theme === 'dark' ? '#3b82f6' : '#2563eb',
       patternBullish: theme === 'dark' ? '#10b981' : '#059669',

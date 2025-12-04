@@ -19,14 +19,6 @@ export default function HomePage() {
             <div className={`absolute inset-0 pointer-events-none z-0 ${
                 theme === "dark" ? "opacity-[0.05]" : "opacity-[0.03]"
             }`}>
-                {/* Candlestick Pattern - Hidden on mobile, visible on larger screens */}
-                <svg className="hidden sm:block absolute top-20 left-4 md:left-10 w-24 h-24 md:w-32 md:h-32" viewBox="0 0 100 100" fill="none">
-                    <rect x="20" y="30" width="8" height="40" fill="currentColor" className={theme === "dark" ? "text-green-400" : "text-green-600"} />
-                    <rect x="35" y="20" width="8" height="50" fill="currentColor" className={theme === "dark" ? "text-red-400" : "text-red-600"} />
-                    <rect x="50" y="40" width="8" height="30" fill="currentColor" className={theme === "dark" ? "text-green-400" : "text-green-600"} />
-                    <rect x="65" y="25" width="8" height="45" fill="currentColor" className={theme === "dark" ? "text-red-400" : "text-red-600"} />
-                    <rect x="80" y="35" width="8" height="35" fill="currentColor" className={theme === "dark" ? "text-green-400" : "text-green-600"} />
-                </svg>
                 {/* Line Graph - Hidden on mobile, visible on tablet+ */}
                 <svg className="hidden md:block absolute bottom-32 right-10 lg:right-20 w-32 h-20 lg:w-40 lg:h-24" viewBox="0 0 200 120" fill="none">
                     <polyline 
@@ -171,7 +163,7 @@ export default function HomePage() {
                                 className={`absolute inset-0 -z-10 blur-3xl rounded-full transition-opacity duration-500 ${
                                     theme === "dark"
                                         ? "bg-blue-500/20"
-                                        : "bg-cyan-500/15"
+                                        : "bg-lapis-500/15"
                                 }`}
                                 style={{
                                     width: "120%",
