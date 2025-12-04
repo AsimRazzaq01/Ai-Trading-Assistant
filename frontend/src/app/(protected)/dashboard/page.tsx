@@ -8,6 +8,7 @@ import { TrendingUp, TrendingDown, Newspaper, BarChart3, Sparkles } from 'lucide
 import MarketOverview from '@/components/MarketOverview';
 import NewsFeed from '@/components/NewsFeed';
 import { getMarketStatus, getMarketStatusSubtitle } from '@/lib/marketStatus';
+import { capitalizeName } from '@/lib/utils';
 
 interface User {
   email?: string;
@@ -45,7 +46,7 @@ export default function DashboardPage() {
     return 'Good Evening';
   };
 
-  const userName = user?.name || user?.username || user?.email?.split('@')[0] || 'Trader';
+  const userName = capitalizeName(user?.name) || user?.username || user?.email?.split('@')[0] || 'Trader';
 
   return (
     <main

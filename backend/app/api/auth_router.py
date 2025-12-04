@@ -14,6 +14,7 @@ from app.db.database import get_db
 from app.db import models
 from app.core.security import hash_password, create_access_token, verify_password
 from app.core.config import settings
+from app.core.utils import capitalize_name
 
 router = APIRouter()
 
@@ -74,7 +75,7 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db)):
         new_user = models.User(
             email=payload.email,
             username=payload.username,
-            name=payload.name,
+            name=capitalize_name(payload.name),
             hashed_password=hash_password(payload.password)
         )
         db.add(new_user)
@@ -178,7 +179,7 @@ def read_me(
         "id": user.id,
         "email": user.email,
         "username": user.username,
-        "name": user.name
+        "name": capitalize_name(user.name)
     }
 
 
@@ -283,7 +284,7 @@ def get_or_create_oauth_user(
         if email and user.email != email:
             user.email = email
         if name and user.name != name:
-            user.name = name
+            user.name = capitalize_name(name)
         db.commit()
         db.refresh(user)
         return user
@@ -296,7 +297,7 @@ def get_or_create_oauth_user(
         user.provider = provider
         user.provider_id = provider_id
         if name:
-            user.name = name
+            user.name = capitalize_name(name)
         db.commit()
         db.refresh(user)
         return user
@@ -308,7 +309,7 @@ def get_or_create_oauth_user(
     
     new_user = models.User(
         email=email,
-        name=name,
+        name=capitalize_name(name),
         username=username,
         hashed_password=random_password,
         provider=provider,
