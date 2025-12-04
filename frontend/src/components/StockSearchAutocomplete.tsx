@@ -12,6 +12,7 @@ interface StockSearchAutocompleteProps {
   className?: string
   disabled?: boolean
   polygonKey: string
+  disableAutocomplete?: boolean // New prop to disable autocomplete dropdown
 }
 
 export default function StockSearchAutocomplete({
@@ -22,15 +23,33 @@ export default function StockSearchAutocomplete({
   className = "",
   disabled = false,
   polygonKey,
+  disableAutocomplete = false, // Default to false (autocomplete enabled)
 }: StockSearchAutocompleteProps) {
   const { theme } = useTheme()
   const [suggestions, setSuggestions] = useState<StockSearchResult[]>([])
-  const [showSuggestions] = useState(false) // Always false - dropdown removed
+  const [showSuggestions, setShowSuggestions] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [selectedIndex, setSelectedIndex] = useState(-1)
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
 
-    // Dropdown removed - no need for click outside handler
+  // Click outside handler to close dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setShowSuggestions(false)
+        setSelectedIndex(-1)
+      }
+    }
+
+    if (showSuggestions && !disableAutocomplete) {
+      document.addEventListener('mousedown', handleClickOutside)
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside)
+      }
+    }
+  }, [showSuggestions, disableAutocomplete])
 
   // Debounced search
   useEffect(() => {
@@ -40,6 +59,13 @@ export default function StockSearchAutocomplete({
 
     if (!value.trim() || value.length < 2) {
       setSuggestions([])
+      setShowSuggestions(false)
+      setSelectedIndex(-1)
+      return
+    }
+
+    if (disableAutocomplete) {
+      // If autocomplete is disabled, don't search
       return
     }
 
@@ -48,10 +74,13 @@ export default function StockSearchAutocomplete({
       try {
         const results = await searchStock(value, polygonKey)
         setSuggestions(results)
-        // Dropdown removed - suggestions stored but not displayed
+        // Show dropdown only if there are multiple results (2 or more)
+        setShowSuggestions(results.length > 1)
+        setSelectedIndex(-1)
       } catch (error) {
         console.error('Error searching stocks:', error)
         setSuggestions([])
+        setShowSuggestions(false)
       } finally {
         setLoading(false)
       }
@@ -62,28 +91,79 @@ export default function StockSearchAutocomplete({
         clearTimeout(searchTimeoutRef.current)
       }
     }
-  }, [value, polygonKey])
+  }, [value, polygonKey, disableAutocomplete])
 
   const handleSelect = (result: StockSearchResult) => {
     onChange(result.ticker)
     onSelect(result.ticker, result.name)
     setSuggestions([])
+    setShowSuggestions(false)
+    setSelectedIndex(-1)
   }
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && suggestions.length > 0) {
-      e.preventDefault()
-      handleSelect(suggestions[0])
+    if (disableAutocomplete || !showSuggestions || suggestions.length === 0) {
+      // If autocomplete is disabled or no suggestions, just handle Enter
+      if (e.key === 'Enter') {
+        // Let the parent handle the search
+        return
+      }
+      return
+    }
+
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault()
+        setSelectedIndex((prev) => 
+          prev < suggestions.length - 1 ? prev + 1 : prev
+        )
+        break
+      case 'ArrowUp':
+        e.preventDefault()
+        setSelectedIndex((prev) => (prev > 0 ? prev - 1 : -1))
+        break
+      case 'Enter':
+        e.preventDefault()
+        if (selectedIndex >= 0 && selectedIndex < suggestions.length) {
+          handleSelect(suggestions[selectedIndex])
+        } else if (suggestions.length > 0) {
+          // If no selection, use first result
+          handleSelect(suggestions[0])
+        }
+        break
+      case 'Escape':
+        e.preventDefault()
+        setShowSuggestions(false)
+        setSelectedIndex(-1)
+        break
     }
   }
+
+  // Scroll selected item into view
+  useEffect(() => {
+    if (selectedIndex >= 0 && containerRef.current) {
+      const selectedElement = containerRef.current.querySelector(
+        `[data-suggestion-index="${selectedIndex}"]`
+      ) as HTMLElement
+      if (selectedElement) {
+        selectedElement.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+      }
+    }
+  }, [selectedIndex])
 
   return (
     <div ref={containerRef} className={`relative ${className}`}>
       <input
+        ref={inputRef}
         type="text"
         value={value}
         onChange={(e) => onChange(e.target.value)}
         onKeyDown={handleKeyDown}
+        onFocus={() => {
+          if (!disableAutocomplete && suggestions.length > 1) {
+            setShowSuggestions(true)
+          }
+        }}
         placeholder={placeholder}
         disabled={disabled}
         className={`w-full px-4 py-2 rounded-lg border focus:ring-2 focus:ring-blue-500 transition-all ${
@@ -101,7 +181,56 @@ export default function StockSearchAutocomplete({
         </div>
       )}
 
-      {/* Dropdown removed - users can type and press Enter to search */}
+      {/* Autocomplete dropdown - only show if enabled and multiple results */}
+      {!disableAutocomplete && showSuggestions && suggestions.length > 1 && (
+        <div className={`absolute z-50 w-full mt-1 max-h-60 overflow-auto rounded-lg border shadow-lg ${
+          theme === "dark"
+            ? "bg-gray-800 border-gray-700"
+            : "bg-white border-gray-300"
+        }`}>
+          {suggestions.map((result, index) => (
+            <button
+              key={`${result.ticker}-${index}`}
+              data-suggestion-index={index}
+              type="button"
+              onClick={() => handleSelect(result)}
+              className={`w-full text-left px-4 py-2 hover:bg-opacity-80 transition-colors ${
+                index === selectedIndex
+                  ? theme === "dark"
+                    ? "bg-blue-600 text-white"
+                    : "bg-blue-100 text-blue-900"
+                  : theme === "dark"
+                  ? "text-white hover:bg-gray-700"
+                  : "text-gray-900 hover:bg-gray-100"
+              } ${index === 0 ? "rounded-t-lg" : ""} ${
+                index === suggestions.length - 1 ? "rounded-b-lg" : ""
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className={`font-semibold ${
+                    theme === "dark" ? "text-white" : "text-gray-900"
+                  }`}>
+                    {result.ticker}
+                  </div>
+                  <div className={`text-sm ${
+                    theme === "dark" ? "text-gray-400" : "text-gray-600"
+                  }`}>
+                    {result.name}
+                  </div>
+                </div>
+                {result.market && (
+                  <div className={`text-xs px-2 py-1 rounded ${
+                    theme === "dark" ? "bg-gray-700 text-gray-300" : "bg-gray-200 text-gray-700"
+                  }`}>
+                    {result.market}
+                  </div>
+                )}
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

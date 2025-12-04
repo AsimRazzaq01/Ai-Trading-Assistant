@@ -82,6 +82,7 @@ export default function FloatingWidget() {
               disabled={loading}
               polygonKey={process.env.NEXT_PUBLIC_POLYGON_API_KEY || ''}
               className="flex-1"
+              disableAutocomplete={true}
             />
             <button
               onClick={() => fetchQuote()}
