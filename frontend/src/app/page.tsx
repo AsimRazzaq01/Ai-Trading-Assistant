@@ -132,21 +132,29 @@ export default function HomePage() {
 
                 {/* RIGHT COLUMN: Animations - Responsive */}
                 <div className="pointer-events-none absolute md:relative inset-0 md:inset-auto z-0 order-1 md:order-2 h-[300px] sm:h-[400px] md:h-auto">
-                    {/* 🌙 Moon — Responsive sizing */}
+                    {/* 🌙 Moon / ☀️ Sun — Responsive sizing */}
                     <motion.div
                         className="absolute top-0 right-4 sm:right-8 md:right-0"
                     >
                         <div className={`absolute inset-0 blur-2xl rounded-full scale-110 transition-colors ${
                             theme === "dark"
                                 ? "bg-gradient-to-b from-white/10 to-transparent"
-                                : "bg-gradient-to-b from-black/25 to-transparent"
+                                : "bg-gradient-to-b from-yellow-400/30 to-transparent"
                         }`} />
                         <div className="scale-[0.67] sm:scale-[0.83] md:scale-100 origin-top-right">
-                            <LottiePlayer
-                                src="https://lottie.host/7186611e-aa0b-427c-b627-e61080a0425a/JsEPffT1cf.lottie"
-                                width={300}
-                                height={300}
-                            />
+                            {theme === "dark" ? (
+                                <LottiePlayer
+                                    src="https://lottie.host/7186611e-aa0b-427c-b627-e61080a0425a/JsEPffT1cf.lottie"
+                                    width={300}
+                                    height={300}
+                                />
+                            ) : (
+                                <LottiePlayer
+                                    src="/sunny.json"
+                                    width={300}
+                                    height={300}
+                                />
+                            )}
                         </div>
                     </motion.div>
 
