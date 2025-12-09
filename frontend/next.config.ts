@@ -1,11 +1,16 @@
 import type { NextConfig } from "next";
 
+// ⚠️ Vercel doesn't support standalone output mode
+// Only use standalone when building for Docker
+const isDockerBuild = process.env.BUILD_FOR_DOCKER === "true";
+
 const nextConfig: NextConfig = {
     // Enable React strict mode for catching issues
     reactStrictMode: true,
 
     // Standalone output is best for Docker (smaller image)
-    output: "standalone",
+    // But Vercel doesn't support it, so we conditionally enable it
+    ...(isDockerBuild ? { output: "standalone" as const } : {}),
 
     // Add headers (CORS helpers)
     async headers() {
