@@ -93,11 +93,22 @@ const StockItem = ({
         }}
       />
       
-      <div className="relative flex items-center gap-2 z-10">
+      {/* Symbol - Left */}
+      <div className="relative z-10 w-16 flex-shrink-0">
         <span className="font-mono font-semibold">{row.symbol}</span>
-        <span className="opacity-70">{row.name?.slice(0,28)}</span>
       </div>
-      <div className="relative text-right z-10">
+      
+      {/* Company Name - Middle */}
+      <div className="relative z-10 flex-1 min-w-0 px-2">
+        <span className={`text-xs truncate block ${
+          theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+        }`}>
+          {row.name ? (row.name.length > 28 ? row.name.slice(0, 28) + '…' : row.name) : '—'}
+        </span>
+      </div>
+      
+      {/* Price & Change - Right */}
+      <div className="relative text-right z-10 flex-shrink-0">
         <div className="opacity-80">${(row.price ?? 0).toFixed(2)}</div>
         <div className={`${(row.changePct ?? 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
           {(row.changePct ?? 0) >= 0 ? '+' : ''}{(row.changePct ?? 0).toFixed(2)}%

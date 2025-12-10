@@ -81,6 +81,8 @@ services:
       NEXT_PUBLIC_APP_URL: http://localhost:3000
       NODE_ENV: development
       PORT: 3000
+      POLYGON_API_KEY: ${POLYGON_API_KEY}
+      NEXT_PUBLIC_POLYGON_API_KEY: ${NEXT_PUBLIC_POLYGON_API_KEY}
 
     depends_on:
       - ai_backend
