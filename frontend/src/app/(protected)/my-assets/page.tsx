@@ -53,15 +53,54 @@ function Toast({
   );
 }
 
-/** Collapsible long text (prevents cutoff of AI text) */
+/** Parse simple markdown (bold, bullets) into React elements */
+function parseMarkdown(text: string): React.ReactNode[] {
+  const lines = text.split('\n');
+  const elements: React.ReactNode[] = [];
+  
+  lines.forEach((line, lineIndex) => {
+    // Parse bold text (**text** or __text__)
+    const parts = line.split(/(\*\*[^*]+\*\*|__[^_]+__)/g);
+    const parsedLine = parts.map((part, partIndex) => {
+      if (part.startsWith('**') && part.endsWith('**')) {
+        return <strong key={`${lineIndex}-${partIndex}`}>{part.slice(2, -2)}</strong>;
+      }
+      if (part.startsWith('__') && part.endsWith('__')) {
+        return <strong key={`${lineIndex}-${partIndex}`}>{part.slice(2, -2)}</strong>;
+      }
+      return part;
+    });
+    
+    // Check if line is a bullet point
+    const trimmedLine = line.trim();
+    const isBullet = trimmedLine.startsWith('- ') || trimmedLine.startsWith('• ') || /^\d+\.\s/.test(trimmedLine);
+    
+    if (isBullet) {
+      elements.push(
+        <div key={lineIndex} className="flex gap-2 items-start">
+          <span className="text-blue-400 mt-0.5">•</span>
+          <span>{parsedLine}</span>
+        </div>
+      );
+    } else if (line.trim()) {
+      elements.push(<p key={lineIndex}>{parsedLine}</p>);
+    }
+  });
+  
+  return elements;
+}
+
+/** Collapsible long text with markdown parsing (prevents cutoff of AI text) */
 function ExpandableText({
   text,
   previewChars = 380,
   className = "",
+  parseAsMarkdown = true,
 }: {
   text: string;
   previewChars?: number;
   className?: string;
+  parseAsMarkdown?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   if (!text) return null;
@@ -71,13 +110,18 @@ function ExpandableText({
     : open
     ? text
     : text.slice(0, previewChars) + "…";
+  
   return (
-    <div className={`${className} leading-relaxed text-sm`}>
-      <p className="whitespace-pre-line">{shown}</p>
+    <div className={`${className} leading-relaxed text-sm space-y-1`}>
+      {parseAsMarkdown ? (
+        <div className="space-y-1">{parseMarkdown(shown)}</div>
+      ) : (
+        <p className="whitespace-pre-line">{shown}</p>
+      )}
       {needsToggle && (
         <button
           onClick={() => setOpen((v) => !v)}
-          className="mt-1 text-xs underline opacity-80 hover:opacity-100"
+          className="mt-1 text-xs underline opacity-80 hover:opacity-100 text-blue-400 hover:text-blue-300"
         >
           {open ? "Show less" : "Show more"}
         </button>
@@ -793,34 +837,44 @@ export default function MyAssetsPage() {
                 })()}
 
                 {/* AI sections */}
-                <div className="space-y-2">
+                <div className="space-y-3">
                   <div>
-                    <div className={`text-xs font-semibold opacity-80 mb-1 ${
-                      theme === "dark" ? "text-gray-300" : "text-gray-700"
+                    <div className={`text-xs font-semibold uppercase tracking-wide mb-2 flex items-center gap-2 ${
+                      theme === "dark" ? "text-blue-400" : "text-blue-600"
                     }`}>
-                      AI Insight
+                      <span className="text-base">🔍</span> AI Insight
                     </div>
-                    <ExpandableText text={a.aiInsight} />
+                    <ExpandableText 
+                      text={a.aiInsight || "No insight available."} 
+                      className={theme === "dark" ? "text-gray-300" : "text-gray-700"}
+                    />
                   </div>
-                  <div>
-                    <div className={`text-xs font-semibold opacity-80 mb-1 ${
-                      theme === "dark" ? "text-gray-300" : "text-gray-700"
+                  <div className={`pt-2 border-t ${theme === "dark" ? "border-gray-700" : "border-gray-300"}`}>
+                    <div className={`text-xs font-semibold uppercase tracking-wide mb-2 flex items-center gap-2 ${
+                      theme === "dark" ? "text-emerald-400" : "text-emerald-600"
                     }`}>
-                      Recommendation
+                      <span className="text-base">📊</span> Recommendation
                     </div>
-                    <p className={`italic text-sm ${
-                      theme === "dark" ? "text-gray-300" : "text-gray-700"
+                    <p className={`italic text-sm font-medium ${
+                      a.aiRating?.toLowerCase().includes("strong buy") ? "text-green-400" :
+                      a.aiRating?.toLowerCase().includes("buy") ? "text-green-500" :
+                      a.aiRating?.toLowerCase().includes("strong sell") ? "text-red-400" :
+                      a.aiRating?.toLowerCase().includes("sell") ? "text-red-500" :
+                      theme === "dark" ? "text-yellow-400" : "text-yellow-600"
                     }`}>
                       {a.aiRating || "Recommendation: Hold — no data."}
                     </p>
                   </div>
-                  <div>
-                    <div className={`text-xs font-semibold opacity-80 mb-1 ${
-                      theme === "dark" ? "text-gray-300" : "text-gray-700"
+                  <div className={`pt-2 border-t ${theme === "dark" ? "border-gray-700" : "border-gray-300"}`}>
+                    <div className={`text-xs font-semibold uppercase tracking-wide mb-2 flex items-center gap-2 ${
+                      theme === "dark" ? "text-purple-400" : "text-purple-600"
                     }`}>
-                      AI News Summary
+                      <span className="text-base">📰</span> AI News Summary
                     </div>
-                    <ExpandableText text={a.aiNews} />
+                    <ExpandableText 
+                      text={a.aiNews || "No recent news."} 
+                      className={theme === "dark" ? "text-gray-300" : "text-gray-700"}
+                    />
                   </div>
                 </div>
 
@@ -853,48 +907,120 @@ export default function MyAssetsPage() {
         {/* Comparison (supports unlimited; show when >=2) */}
         {compareList.length >= 2 && (
           <div
-            className={`mt-10 p-5 rounded-xl border shadow-md transition-colors ${
+            className={`mt-10 p-6 rounded-2xl border-2 shadow-lg transition-all ${
               theme === "dark"
-                ? "bg-gray-900 border-gray-700"
-                : "bg-[#eaf5f3] border-[#cde3dd]"
+                ? "bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 border-blue-500/30"
+                : "bg-gradient-to-br from-white via-blue-50 to-emerald-50 border-blue-300/50"
             }`}
           >
-            <h3 className={`text-2xl font-semibold mb-3 ${
-              theme === "dark" ? "text-white" : "text-gray-900"
-            }`}>
-              AI Stock Comparison
-            </h3>
-            <p className={`mb-3 text-sm ${
-              theme === "dark" ? "text-gray-300" : "text-gray-700"
-            }`}>
-              Comparing:{" "}
-              <span className="font-mono">{compareList.join(", ")}</span>
-            </p>
-            <div className="flex flex-wrap gap-2 mb-3">
+            {/* Header */}
+            <div className="flex items-center gap-3 mb-4">
+              <div className={`p-2.5 rounded-xl ${
+                theme === "dark" ? "bg-blue-500/20" : "bg-blue-100"
+              }`}>
+                <span className="text-2xl">⚖️</span>
+              </div>
+              <div>
+                <h3 className={`text-2xl font-bold ${
+                  theme === "dark" ? "text-white" : "text-gray-900"
+                }`}>
+                  AI Stock Comparison
+                </h3>
+                <p className={`text-sm ${
+                  theme === "dark" ? "text-gray-400" : "text-gray-600"
+                }`}>
+                  Side-by-side analysis powered by AI
+                </p>
+              </div>
+            </div>
+
+            {/* Selected Stocks Pills */}
+            <div className="mb-4">
+              <div className={`text-xs font-semibold uppercase tracking-wide mb-2 ${
+                theme === "dark" ? "text-gray-400" : "text-gray-600"
+              }`}>
+                Comparing {compareList.length} stocks:
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {compareList.map((symbol) => (
+                  <span
+                    key={symbol}
+                    className={`px-3 py-1.5 rounded-full text-sm font-semibold flex items-center gap-2 ${
+                      theme === "dark"
+                        ? "bg-blue-500/20 text-blue-300 border border-blue-500/30"
+                        : "bg-blue-100 text-blue-700 border border-blue-200"
+                    }`}
+                  >
+                    <span className="text-xs">📈</span>
+                    {symbol}
+                    <button
+                      onClick={() => setCompareList((prev) => prev.filter((s) => s !== symbol))}
+                      className="ml-1 opacity-60 hover:opacity-100 transition-opacity"
+                      title={`Remove ${symbol}`}
+                    >
+                      ✕
+                    </button>
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex flex-wrap gap-3 mb-4">
               <button
                 onClick={compareStocks}
-                className={`px-4 py-2 rounded-lg transition-all ${
+                className={`px-5 py-2.5 rounded-xl font-medium transition-all flex items-center gap-2 shadow-md hover:shadow-lg ${
                   theme === "dark"
-                    ? "bg-blue-600 hover:bg-blue-700"
-                    : "bg-blue-500 hover:bg-blue-600 text-white"
+                    ? "bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white"
+                    : "bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white"
                 }`}
               >
-                Run Comparison
+                <span>🚀</span> Run Comparison
               </button>
               <button
-                onClick={() => setCompareList([])}
-                className={`px-4 py-2 rounded-lg transition-all ${
+                onClick={() => {
+                  setCompareList([]);
+                  setCompareResult("");
+                }}
+                className={`px-5 py-2.5 rounded-xl font-medium transition-all ${
                   theme === "dark"
-                    ? "bg-gray-700 hover:bg-gray-600"
-                    : "bg-gray-300 hover:bg-gray-400 text-black"
+                    ? "bg-gray-700 hover:bg-gray-600 text-gray-300"
+                    : "bg-gray-200 hover:bg-gray-300 text-gray-700"
                 }`}
               >
-                Clear Selection
+                Clear All
               </button>
             </div>
+
+            {/* Comparison Result */}
             {compareResult && (
-              <div className="mt-4">
-                <ExpandableText text={compareResult} previewChars={800} />
+              <div className={`mt-4 p-4 rounded-xl ${
+                theme === "dark"
+                  ? "bg-gray-800/50 border border-gray-700"
+                  : "bg-white/70 border border-gray-200"
+              }`}>
+                <div className={`text-xs font-semibold uppercase tracking-wide mb-3 flex items-center gap-2 ${
+                  theme === "dark" ? "text-emerald-400" : "text-emerald-600"
+                }`}>
+                  <span>📋</span> Analysis Results
+                </div>
+                <ExpandableText 
+                  text={compareResult} 
+                  previewChars={800} 
+                  className={theme === "dark" ? "text-gray-300" : "text-gray-700"}
+                />
+              </div>
+            )}
+
+            {/* Empty State */}
+            {!compareResult && (
+              <div className={`text-center py-6 rounded-xl border-2 border-dashed ${
+                theme === "dark"
+                  ? "border-gray-700 text-gray-500"
+                  : "border-gray-300 text-gray-400"
+              }`}>
+                <span className="text-3xl mb-2 block">🔍</span>
+                <p className="text-sm">Click "Run Comparison" to analyze your selected stocks</p>
               </div>
             )}
           </div>
