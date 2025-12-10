@@ -38,6 +38,7 @@ ENV API_URL_INTERNAL=${API_URL_INTERNAL:-http://ai_backend:8000}
 # ------------------------------------------------------------
 # Build the Next.js app (standalone for smaller runtime image)
 # ------------------------------------------------------------
+ENV BUILD_FOR_DOCKER=true
 RUN npm run build
 
 # ============================================================
