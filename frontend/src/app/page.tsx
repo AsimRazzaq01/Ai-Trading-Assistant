@@ -58,7 +58,7 @@ export default function HomePage() {
             </div>
 
             {/* Main Content Grid - Responsive layout */}
-            <div className="relative grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 lg:gap-16 items-center min-h-screen px-4 sm:px-6 md:px-10 lg:px-12 xl:px-16 pt-16 sm:pt-20 md:pt-24 pb-32 sm:pb-40 md:pb-24">
+            <div className="relative grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 lg:gap-16 items-center min-h-screen px-4 sm:px-6 md:px-10 lg:px-12 xl:px-16 pt-16 sm:pt-20 md:pt-24 pb-44 sm:pb-48 md:pb-36 lg:pb-32">
                 {/* LEFT COLUMN: Title, Subtitle, Quote, Buttons */}
                 <div className="flex flex-col justify-center space-y-4 sm:space-y-5 md:space-y-6 text-center md:text-left relative z-10 order-2 md:order-1">
                     {/* 🪙 Project Name - Responsive text sizes */}
