@@ -97,7 +97,7 @@ export default function HomePage() {
                             theme === "dark" ? "text-gray-300" : "text-gray-700"
                         }`}
                     >
-                        Next stop — the moon!
+                        {theme === "dark" ? "Next stop — the moon!" : "Next step — the Sun!"}
                     </motion.p>
 
                     {/* Buttons - Responsive with touch targets */}
