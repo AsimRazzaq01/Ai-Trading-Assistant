@@ -39,24 +39,45 @@ The application follows a microservices architecture with separate frontend and 
 
 ## ✨ Features
 
+### 🎨 UI/UX Features
+- **Dark/Light Theme** - Full theme support with smooth transitions
+- **Responsive Design** - Mobile, tablet, and desktop optimized
+- **Animated UI** - Framer Motion animations throughout
+- **Floating Widget** - Quick access to stock search
+- **Disclaimer Modal** - Legal disclaimer for trading information
+- **Toast Notifications** - User feedback system
+- **Loading States** - Comprehensive loading indicators
+
 ### 🔐 Authentication & Security
 - Secure JWT-based authentication with HttpOnly cookies
 - Session management across local and production environments
 - Protected routes with server-side authentication
 - Cross-origin cookie support for production deployment
+- Password hashing with bcrypt
+- Email or username login options
 
 ### 📊 Trading Features
 
 #### **Dashboard**
-- User overview and portfolio summary
+- Market overview with top gainers and losers
+- Real-time financial news feed
 - Quick access to all features
-- Real-time connection status
+- Responsive grid layout
+- Theme-aware gradient backgrounds
 
 #### **Deep Research** 🔬
+- Stock symbol search (supports company names)
+- Interactive price charts (7/30/90 days or custom range)
+- AI-powered analysis and insights
 - Technical and fundamental analysis
-- AI-powered market insights
-- Comprehensive research reports
-- Pattern analysis and predictions
+- News integration and summaries
+- Trading strategies recommendations
+- Confidence scoring
+- **PDF report generation**
+- Add to watchlist/pattern trends/my assets
+- Pattern detection visualization
+- Support/resistance levels
+- Risk assessment
 
 #### **News Brief** 📰
 - Real-time financial news feed
@@ -65,35 +86,79 @@ The application follows a microservices architecture with separate frontend and 
 - Expert analysis and commentary
 
 #### **Pattern Trends** 📈
-- AI-powered pattern recognition
-- Chart pattern detection (Head & Shoulders, Triangles, etc.)
-- Trend analysis and strength metrics
+- Add stocks for pattern analysis
+- Interactive candlestick charts
+- AI pattern detection (Head & Shoulders, Triangles, etc.)
+- Trend analysis (uptrend/downtrend/sideways)
 - Support & resistance level identification
-- Real-time pattern alerts
+- Pattern alerts and warnings
+- Confidence scoring for patterns
+- Date range selection (7/30/90 days or custom)
+- **1-day intraday view** (click on candle for detailed 5-minute bars)
+- Pattern visualization on charts
+- Pattern selection and highlighting
 
 #### **My Watchlist** 👀
 - Track favorite securities
 - Real-time price monitoring
 - Add/remove symbols
-- Price change tracking
+- Price change tracking (percentage)
+- Stock name and symbol display
+- Refresh prices button
+- Stock symbol or company name search
+- Table view with sortable columns
+- Color-coded price changes (green/red)
+- Backend database persistence (syncs across devices)
 
 #### **Risk Management** 🛡️
-- Portfolio risk metrics
-- Position size limits
+- Portfolio risk metrics (total value, position count, risk score)
+- Max drawdown calculation
+- Sharpe ratio calculation
+- Position size limits configuration
 - Stop loss and take profit settings
+- **Position-level risk analysis** with share amount tracking
+- Supports partial shares
 - Risk alerts and warnings
-- Sharpe ratio and drawdown analysis
+- Dynamic risk scoring (Low/Medium/High)
+- Position value calculations
+- Portfolio percentage tracking
+- Risk level indicators per position
+- Integrates with "My Assets" page data
 
 #### **Market Chat** 💬
-- AI-powered trading assistant
-- Real-time market insights
-- Trading strategy advice
-- Interactive Q&A interface
+- Interactive chat interface
+- AI-powered responses (OpenAI integration)
+- Chat history persistence (stored in database)
+- Real-time message display
+- Loading indicators
+- Welcome message
+- Message timestamps
+- Auto-scroll to latest message
+- Context-aware AI responses
+- Market-focused conversation
+
+#### **My Assets** 💼
+- AI-enhanced asset dashboard for tracking personal stock holdings
+- Add stocks to personal asset dashboard
+- Interactive price charts (7/30/90 days or custom range)
+- AI-powered insights and summaries
+- AI stock recommendations (Buy/Hold/Sell)
+- AI news summaries
+- **Multi-stock comparison tool** (select 2+ stocks)
+- Refresh all assets
+- Remove assets
+- User-specific localStorage storage
+- Expandable text for long AI responses
+- Toast notifications
 
 #### **Settings** ⚙️
-- Account management
-- User preferences
-- System configuration
+- Account information display (email, user ID)
+- Change password functionality
+- Password visibility toggle
+- Form validation
+- Success/error messages
+- Current password verification
+- Password strength requirements
 
 ---
 
@@ -103,6 +168,14 @@ The application follows a microservices architecture with separate frontend and 
 - **Framework**: [Next.js 14](https://nextjs.org/) (App Router)
 - **Language**: TypeScript
 - **Styling**: Tailwind CSS
+- **UI Libraries**:
+  - [Framer Motion](https://www.framer.com/motion/) - Animations
+  - [Recharts](https://recharts.org/) - Chart visualizations
+  - [Lucide React](https://lucide.dev/) - Icons
+  - [Lottie Files](https://lottiefiles.com/) - Animated graphics
+- **Forms**: React Hook Form with Zod validation
+- **HTTP Client**: Axios
+- **PDF Generation**: jsPDF with html2canvas
 - **Deployment**: Vercel
 - **Runtime**: Node.js
 
@@ -116,8 +189,12 @@ The application follows a microservices architecture with separate frontend and 
 
 ### Infrastructure
 - **Containerization**: Docker & Docker Compose
-- **Database**: PostgreSQL
+- **Database**: PostgreSQL 16
 - **Version Control**: Git
+
+### External APIs & Services
+- **Polygon.io API** - Real-time stock market data, news, and ticker information
+- **OpenAI API** - AI-powered chat, analysis, and insights
 
 ---
 
@@ -250,6 +327,10 @@ API_URL_INTERNAL=http://localhost:8000
 
 # App URL (optional, for internal API calls)
 NEXT_PUBLIC_APP_URL=http://localhost:3000
+
+# Polygon API Key (Required for market data)
+NEXT_PUBLIC_POLYGON_API_KEY=your-polygon-api-key-here
+POLYGON_API_KEY=your-polygon-api-key-here
 ```
 
 **Production (Vercel):**
@@ -257,6 +338,10 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 NEXT_PUBLIC_API_URL_BROWSER=https://your-railway-backend.up.railway.app
 API_URL_INTERNAL=https://your-railway-backend.up.railway.app
 NEXT_PUBLIC_APP_URL=https://your-vercel-app.vercel.app
+
+# Polygon API Key (Required for market data)
+NEXT_PUBLIC_POLYGON_API_KEY=your-polygon-api-key-here
+POLYGON_API_KEY=your-polygon-api-key-here
 ```
 
 ### Backend (Railway / Local)
@@ -283,8 +368,11 @@ COOKIE_SECURE=False
 COOKIE_SAMESITE=lax
 COOKIE_DOMAIN=
 
-# OpenAI API (Required for Market Chat feature)
+# OpenAI API (Required for Market Chat and AI analysis features)
 OPENAI_API_KEY=sk-your-openai-api-key-here
+
+# Polygon API Key (Required for market data - optional, can be set in frontend)
+# POLYGON_API_KEY=your-polygon-api-key-here
 
 # Cookies (Production)
 # COOKIE_SECURE=True
@@ -300,20 +388,11 @@ COOKIE_SECURE=True
 COOKIE_SAMESITE=none
 COOKIE_DOMAIN=
 
-# OpenAI API (Required for Market Chat feature)
+# OpenAI API (Required for Market Chat and AI analysis features)
 OPENAI_API_KEY=sk-your-openai-api-key-here
 
-# OAuth Configuration (Required for Google/GitHub login)
-GOOGLE_CLIENT_ID=your-google-client-id.apps.googleusercontent.com
-GOOGLE_CLIENT_SECRET=your-google-client-secret
-GOOGLE_REDIRECT_URI=https://your-railway-backend.up.railway.app/auth/google/callback
-
-GITHUB_CLIENT_ID=your-github-client-id
-GITHUB_CLIENT_SECRET=your-github-client-secret
-GITHUB_REDIRECT_URI=https://your-railway-backend.up.railway.app/auth/github/callback
-
-# Frontend URL (for OAuth redirects after authentication)
-FRONTEND_URL=https://your-vercel-app.vercel.app
+# Polygon API Key (Optional - can be set in frontend instead)
+# POLYGON_API_KEY=your-polygon-api-key-here
 ```
 
 ---
@@ -325,48 +404,120 @@ Ai-Trading-Assistant/
 ├── backend/                 # FastAPI backend
 │   ├── app/
 │   │   ├── api/            # API routes
-│   │   │   ├── auth_router.py
-│   │   │   ├── trades_router.py
-│   │   │   ├── chat_router.py  # OpenAI chat integration
-│   │   │   └── deps.py     # Dependencies (auth, etc.)
+│   │   │   ├── auth_router.py      # Authentication
+│   │   │   ├── trades_router.py    # Trading endpoints
+│   │   │   ├── chat_router.py       # OpenAI chat integration
+│   │   │   ├── watchlist_router.py  # Watchlist management
+│   │   │   ├── pattern_trends_router.py  # Pattern detection
+│   │   │   ├── risk_management_router.py  # Risk settings
+│   │   │   ├── debug_router.py      # Debug endpoints
+│   │   │   └── deps.py             # Dependencies (auth, etc.)
 │   │   ├── core/           # Core configuration
-│   │   │   ├── config.py
-│   │   │   └── security.py
+│   │   │   ├── config.py   # Settings and environment
+│   │   │   ├── security.py # JWT, password hashing
+│   │   │   └── utils.py    # Utility functions
 │   │   ├── db/             # Database models and connection
-│   │   │   ├── models.py
-│   │   │   └── database.py
+│   │   │   ├── models.py    # SQLAlchemy models
+│   │   │   └── database.py # Database connection
 │   │   ├── schemas/        # Pydantic schemas
+│   │   │   ├── user.py
+│   │   │   ├── token.py
+│   │   │   ├── watchlist.py
+│   │   │   ├── pattern_trends.py
+│   │   │   └── risk_management.py
 │   │   └── main.py         # FastAPI app entry point
 │   ├── Dockerfile
-│   └── requirements.txt
+│   ├── requirements.txt
+│   └── pyrightconfig.json
 │
 ├── frontend/                # Next.js frontend
 │   ├── src/
 │   │   ├── app/
 │   │   │   ├── (auth)/     # Auth pages (login, register)
+│   │   │   │   ├── login/
+│   │   │   │   └── register/
 │   │   │   ├── (protected)/ # Protected pages
 │   │   │   │   ├── dashboard/
 │   │   │   │   ├── deep-research/
+│   │   │   │   │   └── DeepResearchContent.tsx
 │   │   │   │   ├── news-brief/
 │   │   │   │   ├── pattern-trends/
 │   │   │   │   ├── watchlist/
+│   │   │   │   ├── my-assets/
 │   │   │   │   ├── risk-management/
 │   │   │   │   ├── market-chat/
 │   │   │   │   └── settings/
-│   │   │   └── api/        # Next.js API routes (proxies)
+│   │   │   ├── api/        # Next.js API routes (proxies)
+│   │   │   │   ├── login/
+│   │   │   │   ├── register/
+│   │   │   │   ├── me/
+│   │   │   │   ├── logout/
+│   │   │   │   ├── change-password/
+│   │   │   │   ├── watchlist/
+│   │   │   │   ├── market-chat/
+│   │   │   │   ├── pattern-trends/
+│   │   │   │   ├── pattern-detection/
+│   │   │   │   ├── risk-management/
+│   │   │   │   ├── news/
+│   │   │   │   ├── news-analysis/
+│   │   │   │   ├── market/
+│   │   │   │   ├── quote/
+│   │   │   │   └── accept-disclaimer/
+│   │   │   ├── layout.tsx  # Root layout
+│   │   │   └── page.tsx    # Home page
 │   │   ├── components/     # React components
+│   │   │   ├── auth/
+│   │   │   │   ├── LoginForm.tsx
+│   │   │   │   ├── RegisterForm.tsx
+│   │   │   │   └── LogoutButton.tsx
+│   │   │   ├── ui/
+│   │   │   │   ├── Button.tsx
+│   │   │   │   ├── Input.tsx
+│   │   │   │   ├── PasswordInput.tsx
+│   │   │   │   └── LottiePlayer.tsx
+│   │   │   ├── Header.tsx
+│   │   │   ├── FloatingWidget.tsx
+│   │   │   ├── MarketOverview.tsx
+│   │   │   ├── NewsFeed.tsx
+│   │   │   ├── NewsAnalysisModal.tsx
+│   │   │   ├── CandlestickChart.tsx
+│   │   │   ├── StockChartVisualization.tsx
+│   │   │   ├── StockSearchAutocomplete.tsx
+│   │   │   └── DisclaimerModal.tsx
+│   │   ├── context/
+│   │   │   └── ThemeContext.tsx  # Dark/Light theme
 │   │   └── lib/           # Utilities and hooks
+│   │       ├── api/
+│   │       │   ├── axios-instance.ts
+│   │       │   └── get-backend-url.ts
+│   │       ├── hooks/
+│   │       │   └── useAuth.ts
+│   │       ├── validation/
+│   │       │   └── auth-schemas.ts
+│   │       ├── fetchStockData.ts
+│   │       ├── fetchStockSummary.ts
+│   │       ├── searchStock.ts
+│   │       ├── marketStatus.ts
+│   │       └── utils.ts
+│   ├── public/             # Static assets
+│   │   └── sunny.json      # Lottie animation
 │   ├── Dockerfile
 │   ├── package.json
+│   ├── tsconfig.json
+│   ├── tailwind.config.ts
+│   ├── next.config.ts
+│   ├── biome.json
 │   └── vercel.json
 │
 ├── db/                     # Database initialization
-│   └── init.sql
+│   ├── init.sql
+│   └── migrate_email_nullable.sql
 │
 ├── docker-compose.yml      # Docker Compose configuration
 ├── README.md
 ├── ARCHITECTURE_GUIDE.md   # Detailed architecture documentation
-└── QUICK_REFERENCE.md      # Quick reference for adding features
+├── QUICK_REFERENCE.md      # Quick reference for adding features
+└── NEW_PAGES_SUMMARY.md    # Overview of all pages
 ```
 
 ---
@@ -406,44 +557,11 @@ Ai-Trading-Assistant/
 - [ ] Set `COOKIE_SECURE=True` and `COOKIE_SAMESITE=none`
 - [ ] Use strong `JWT_SECRET_KEY`
 - [ ] Update CORS settings
-- [ ] **Set OAuth environment variables** (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`)
-- [ ] **Configure OAuth redirect URIs** in Google/GitHub OAuth apps to match production backend URL
-- [ ] Set `FRONTEND_URL` to production frontend URL
+- [ ] **Set `OPENAI_API_KEY`** for AI features (Market Chat, Deep Research, My Assets)
+- [ ] **Set `POLYGON_API_KEY`** in frontend (Vercel) for market data
 - [ ] Test authentication flow
 - [ ] Verify cookie forwarding
-
-### OAuth Configuration Guide
-
-#### Google OAuth Setup
-
-1. **Create OAuth Credentials:**
-   - Go to [Google Cloud Console](https://console.cloud.google.com/)
-   - Create a new project or select an existing one
-   - Enable Google+ API
-   - Go to "Credentials" → "Create Credentials" → "OAuth client ID"
-   - Choose "Web application"
-   - Add authorized redirect URIs:
-     - Local: `http://localhost:8000/auth/google/callback`
-     - Production: `https://your-railway-backend.up.railway.app/auth/google/callback`
-
-2. **Set Environment Variables in Railway:**
-   - `GOOGLE_CLIENT_ID`: Your Google OAuth client ID
-   - `GOOGLE_CLIENT_SECRET`: Your Google OAuth client secret
-   - `GOOGLE_REDIRECT_URI`: `https://your-railway-backend.up.railway.app/auth/google/callback` (optional, auto-constructed if not set)
-
-#### GitHub OAuth Setup
-
-1. **Create OAuth App:**
-   - Go to GitHub → Settings → Developer settings → OAuth Apps
-   - Click "New OAuth App"
-   - Set Authorization callback URL:
-     - Local: `http://localhost:8000/auth/github/callback`
-     - Production: `https://your-railway-backend.up.railway.app/auth/github/callback`
-
-2. **Set Environment Variables in Railway:**
-   - `GITHUB_CLIENT_ID`: Your GitHub OAuth app client ID
-   - `GITHUB_CLIENT_SECRET`: Your GitHub OAuth app client secret
-   - `GITHUB_REDIRECT_URI`: `https://your-railway-backend.up.railway.app/auth/github/callback` (optional, auto-constructed if not set)
+- [ ] Verify market data is loading correctly
 
 ---
 
@@ -494,8 +612,7 @@ See `QUICK_REFERENCE.md` for templates and patterns:
 
 - **[ARCHITECTURE_GUIDE.md](./ARCHITECTURE_GUIDE.md)** - Comprehensive architecture guide
 - **[QUICK_REFERENCE.md](./QUICK_REFERENCE.md)** - Quick reference for common tasks
-- **[NEW_PAGES_SUMMARY.md](./NEW_PAGES_SUMMARY.md)** - Overview of all pages
-- **[FIXES_APPLIED.md](./FIXES_APPLIED.md)** - Authentication fixes and solutions
+- **[NEW_PAGES_SUMMARY.md](./NEW_PAGES_SUMMARY.md)** - Overview of all pages and features
 
 ### API Documentation
 
@@ -545,6 +662,11 @@ This project is part of a senior capstone project at Farmingdale State College.
 - **Vercel** - Frontend hosting platform
 - **Railway** - Backend and database hosting
 - **Tailwind CSS** - Utility-first CSS framework
+- **Polygon.io** - Market data API
+- **OpenAI** - AI-powered insights and chat
+- **Framer Motion** - Animation library
+- **Recharts** - Chart visualization library
+- **Lottie Files** - Animated graphics
 
 ---
 
